@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Dine now works — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --text-primary: #0c1118;
+    --text-tertiary: #48515d;
+    --text-quaternary: #5e6570;
+    --teal-300: #7bdbc6;
+    --teal-600: #108570;
+    --teal-700: #126d61;
+    --route: #24a38a;
+    --pink-600: #b44295;
+    --purple-600: #8759b5;
+    --warning-600: #e1480d;
+    --grey-track: #d9dade;
+    --map-bg: #d9dade;
+    --phone-frame: #212831;
+    --border-alpha: rgba(12, 17, 24, 0.1);
+    --alpha-30: rgba(12, 17, 24, 0.3);
+    --shadow-md: 0 2px 10px -1px rgba(47, 55, 66, 0.04), 0 1px 4px -2px rgba(47, 55, 66, 0.02);
+    --shadow-lg: 0 6px 16px -4px rgba(47, 55, 66, 0.06), 0 2px 6px -2px rgba(47, 55, 66, 0.02), 0 1px 2px -1px rgba(47, 55, 66, 0.03);
+    --shadow-sm: drop-shadow(0 1px 2.5px rgba(47, 55, 66, 0.05)) drop-shadow(0 1px 1px rgba(47, 55, 66, 0.05));
+    --shadow-xs: drop-shadow(0 1px 1.5px rgba(47, 55, 66, 0.04));
+    --font-display: "Abril Fatface", Georgia, serif;
+    --font-body: "Open Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #fff;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- placeholder page around the section ---------- */
+  .filler {
+    min-height: 90vh;
+    display: grid;
+    place-items: center;
+    padding: 40px 16px;
+    background: #f5f6f7;
+    text-align: center;
+  }
+  .filler h2 { font: 400 40px/1.2 var(--font-display); margin: 0 0 8px; }
+  .filler p { margin: 0; color: var(--text-tertiary); }
+
+  /* ---------- how it works ---------- */
+  .hiw { position: relative; /* height set from JS: 1 + steps × hold */ }
+  .hiw__pin {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 40px;
+    overflow: hidden;
+  }
+  .hiw__row {
+    width: 100%;
+    max-width: 1216px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+  .hiw__copy {
+    flex: 1 0 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .hiw__title {
+    margin: 0;
+    font: 400 32px/38px var(--font-display);
+    color: var(--text-primary);
+  }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 20px; }
+  .step {
+    all: unset;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 26px; /* 20px gap + 6px inner padding */
+    cursor: pointer;
+    max-width: 379px;
+  }
+  .step:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 4px; border-radius: 4px; }
+  .step__track, .step__fill {
+    position: absolute;
+    left: -1.5px;
+    top: 0;
+    width: 3px;
+    border-radius: 3px;
+  }
+  .step__track { bottom: 0; background: var(--grey-track); }
+  .step__fill { height: 0; background: var(--teal-600); } /* height is scrubbed by scroll, see updateFills() */
+  .step__title {
+    font: 600 20px/26px var(--font-body);
+    color: var(--text-quaternary);
+    transition: color 250ms ease-out;
+  }
+  .step__body {
+    font: 400 16px/28px var(--font-body);
+    color: var(--text-quaternary);
+    width: 353px;
+    max-width: 100%;
+    transition: color 250ms ease-out;
+  }
+  .step.is-active .step__title { color: var(--teal-700); }
+  .step.is-active .step__body { color: var(--text-primary); }
+  .step__bodywrap { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 300ms ease-out; }
+  .step__bodywrap > * { overflow: hidden; }
+
+  /* ---------- illustration ---------- */
+  .ill-wrap { position: relative; flex: none; width: 500px; height: 460px; }
+  .stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 500px;
+    height: 460px;
+    transform-origin: 0 0;
+  }
+  .layer { position: absolute; will-change: transform, opacity; }
+
+  .map {
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    border: 1px solid var(--border-alpha);
+    background: var(--map-bg);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .map__img { position: absolute; left: -174px; top: -268px; width: 972px; height: 884px; transform-origin: 0 0; }
+  .tint { position: absolute; inset: 0; background: linear-gradient(to bottom, #fff, var(--teal-300)); }
+  .tint img { position: absolute; left: -305px; top: -417px; width: 1189px; height: 1081px; mix-blend-mode: soft-light; }
+  .phone {
+    left: 116px; top: 53px; width: 279px; height: 665px;
+    border: 10px solid var(--phone-frame);
+    border-radius: 24px;
+    transform-origin: 50% 180px;
+  }
+  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 24px; }
+
+  .route { left: 203.5px; top: 152px; overflow: visible; }
+
+  .me {
+    left: 232px; top: 194px; width: 88.23px; height: 89.682px;
+    display: flex; align-items: center; justify-content: center;
+    transform-origin: 50% 50%;
+  }
+  .me__rot { position: relative; width: 68.274px; height: 58.186px; transform: rotate(-50.84deg); flex: none; }
+  .me__rot img { position: absolute; top: 0; bottom: 0; right: 0; left: -7.77%; width: 107.77%; height: 100%; display: block; }
+
+  .pin-group { transform-origin: var(--ox) var(--oy); }
+  .photo { position: absolute; display: flex; align-items: center; justify-content: center; }
+  .photo__card {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    background: #fff;
+    border: 1px solid var(--border-alpha);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  .photo__inner {
+    position: relative;
+    flex: 1 0 0;
+    min-height: 1px;
+    border: 1px solid var(--border-alpha);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+  }
+  .photo__inner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+
+  .tooltip { position: absolute; width: 124px; display: flex; flex-direction: column; align-items: center; filter: var(--shadow-sm); }
+  .tooltip__body {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 16px;
+    border-radius: 24px;
+    background: var(--teal-600);
+  }
+  .tooltip__body img { width: 20px; height: 20px; display: block; flex: none; }
+  .tooltip__label { padding: 0 6px; font: 600 16px/22px var(--font-body); color: #fff; white-space: nowrap; }
+  .tooltip__tail { position: relative; width: 16px; height: 6px; }
+  .tooltip__tail img { position: absolute; left: 0; right: 0; bottom: 0; top: -41.91%; width: 100%; height: 141.91%; display: block; }
+
+  .chip {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 20px;
+    border-radius: 9999px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .chip img { width: 20px; height: 20px; display: block; flex: none; }
+  .chip span { padding: 0 6px; font: 600 16px/22px var(--font-body); color: #fff; }
+  .chip--pink { background: var(--pink-600); }
+  .chip--purple { background: var(--purple-600); }
+  .chip--orange { background: var(--warning-600); }
+  .tag-wrap { left: -39.13px; top: 49.69px; width: 126px; height: 56px; transform-origin: 50% 50%; }
+  .tag-wrap .chip { transform: rotate(3.3deg); }
+
+  .card {
+    left: -96px; top: 287px; width: 364px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border-alpha);
+    background: var(--teal-700);
+    filter: var(--shadow-xs);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    color: #fff;
+    transform-origin: 50% 50%;
+  }
+  .card__head { display: flex; gap: 12px; align-items: flex-start; }
+  .card__icon { padding-top: 2px; width: 24px; flex: none; }
+  .card__icon img { width: 20px; height: 20px; display: block; }
+  .card__time { margin: 0; font: 600 20px/26px var(--font-body); }
+  .card__countdown {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--alpha-30);
+  }
+  .card__countdown span:first-child { flex: 1; font: 600 20px/26px var(--font-body); }
+  .card__countdown span:last-child { font: 600 24px/32px var(--font-body); letter-spacing: -0.24px; }
+
+  .xfade { position: absolute; inset: 0; pointer-events: none; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- mobile: stack copy above illustration ---------- */
+  @media (max-width: 899px) {
+    .hiw__pin { padding: 0 16px; align-items: stretch; }
+    .hiw__row {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px 0;
+    }
+    .hiw__copy { flex: none; gap: 20px; }
+    .hiw__title { font-size: 28px; line-height: 34px; }
+    .steps { gap: 12px; }
+    .step { max-width: none; }
+    .step__title { font-size: 18px; line-height: 24px; }
+    .step__body { width: auto; font-size: 15px; line-height: 24px; min-height: 48px; } /* same height for every step, so the illustration doesn't jump */
+    /* only the active step shows its description, so everything fits one screen */
+    .step:not(.is-active) .step__bodywrap { grid-template-rows: 0fr; }
+    .ill-wrap { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<section class="filler" aria-label="Placeholder: content above">
+  <div>
+    <h2>Dine now</h2>
+    <p>Placeholder hero. Scroll down to the “How it works” section.</p>
+  </div>
+</section>
+
+<section class="hiw" id="hiw" aria-labelledby="hiw-title">
+  <div class="hiw__pin">
+    <div class="hiw__row">
+      <div class="hiw__copy">
+        <h2 class="hiw__title" id="hiw-title">How Dine now works</h2>
+        <ol class="steps">
+          <li><button class="step" type="button" data-step="1">
+            <span class="step__track" aria-hidden="true"></span><span class="step__fill" aria-hidden="true"></span>
+            <span class="step__title">Pick and claim an offer</span>
+            <span class="step__bodywrap"><span><span class="step__body" style="display:block">Select a venue you like and claim a time slot</span></span></span>
+          </button></li>
+          <li><button class="step" type="button" data-step="2">
+            <span class="step__track" aria-hidden="true"></span><span class="step__fill" aria-hidden="true"></span>
+            <span class="step__title">Arrive at the venue on time</span>
+            <span class="step__bodywrap"><span><span class="step__body" style="display:block">You may lose the offer if you arrive late</span></span></span>
+          </button></li>
+          <li><button class="step" type="button" data-step="3">
+            <span class="step__track" aria-hidden="true"></span><span class="step__fill" aria-hidden="true"></span>
+            <span class="step__title">Display your confirmation</span>
+            <span class="step__bodywrap"><span><span class="step__body" style="display:block">Show your claim confirmation screen to a staff member to get the 30% off offer</span></span></span>
+          </button></li>
+        </ol>
+      </div>
+
+      <div class="ill-wrap" id="ill-wrap" role="img" aria-label="Map showing nearby venues with 30% off offers">
+        <div class="stage" id="stage" aria-hidden="true">
+          <div class="map">
+            <img class="map__img layer" data-el="map" src="assets/map.png" alt="">
+            <div class="tint layer" data-el="tint"><img src="assets/map.png" alt=""></div>
+            <div class="phone layer" data-el="phone"><img src="assets/phone-screen.png" alt=""></div>
+          </div>
+
+          <svg class="route layer" data-el="route" width="166.501" height="92.3729" viewBox="0 0 166.501 92.3729" fill="none">
+            <defs>
+              <radialGradient id="glow-dot">
+                <stop offset="0" stop-color="#fff" stop-opacity="1"/>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+              </radialGradient>
+              <mask id="glow-mask" maskUnits="userSpaceOnUse" x="-40" y="-40" width="250" height="180">
+                <g id="glow-dots"></g>
+              </mask>
+            </defs>
+            <path id="route-path" d="M4.00048 69.0005L145.97 88.3261C148.706 88.6986 151.226 86.7826 151.599 84.0466L162.5 4.00048" stroke="var(--route)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+            <path id="route-glow" d="M4.00048 69.0005L145.97 88.3261C148.706 88.6986 151.226 86.7826 151.599 84.0466L162.5 4.00048" stroke="#d4fbef" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" mask="url(#glow-mask)" opacity="0"/>
+          </svg>
+
+          <div class="me layer" data-el="me">
+            <div class="me__rot"><img src="assets/me.svg" alt=""></div>
+          </div>
+
+          <!-- pin groups are generated from PINS below; each is its own layer -->
+          <div id="pins"></div>
+
+          <div class="card layer" data-el="card">
+            <div class="card__head">
+              <div class="card__icon"><img src="assets/clock.svg" alt=""></div>
+              <p class="card__time">Arrive between<br>12:30PM - 1:00PM</p>
+            </div>
+            <div class="card__countdown"><span>Offer activates in</span><span>34:59</span></div>
+          </div>
+
+          <div class="chip chip--pink layer" data-el="chipPink" style="left:63px;top:-30px">
+            <img src="assets/clock.svg" alt=""><span>Available right now</span>
+          </div>
+          <div class="chip chip--purple layer" data-el="chipPurple" style="left:406px;top:233px">
+            <img src="assets/marker-pin.svg" alt=""><span>Nearby</span>
+          </div>
+          <div class="chip chip--orange layer" data-el="chipOrange" style="left:155px;top:426px">
+            <img src="assets/footprints.svg" alt=""><span>Just walk in</span>
+          </div>
+
+          <div class="tag-wrap layer" data-el="tag">
+            <div class="chip chip--pink"><img src="assets/hand.svg" alt=""><span>Say hi!</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="filler" aria-label="Placeholder: content below">
+  <div>
+    <h2>Next section</h2>
+    <p>The “How it works” section has unpinned and the page continues.</p>
+  </div>
+</section>
+
+<script>
+/* =====================================================================
+   TIMING — every tweakable number lives here (ms unless noted)
+   ===================================================================== */
+const TIMING = {
+  stepHoldVh: 1,          // scroll distance each step holds, in viewport heights
+  enterAt: 0.5,           // step 1 plays once the section top is above this fraction of the viewport
+  pinPop:   { duration: 420, stagger: 80, damping: 0.55 },  // scale 0 → 1, slight overshoot
+  pop:      { duration: 300, fromScale: 0.8, damping: 0.75 }, // light spring
+  fade:     { duration: 250 },                               // ease-out
+  zoom:     { duration: 500 },                               // step 2 map zoom, ease-in-out
+  lineDraw: { duration: 600 },                               // ease-in-out
+  lift:     { duration: 300, distance: 24 },                 // step 3 move-up-and-fade, ease-out
+  glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
+  catchUp: 3,             // playback speed while the user scrolls past several steps at once
+  crossfade: 300,         // reduced-motion state swap
+  fillMinPx: 13,          // green bar on the active step never gets shorter than this (Figma's cap)
+};
+
+/* ---------- easing ---------- */
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const easeInOut = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+// Damped spring normalised so it has settled (≈0.1%) by t = 1. Lower damping = more overshoot.
+const spring = z => {
+  const zw = 6.9, w = zw / z, wd = w * Math.sqrt(1 - z * z);
+  return t => (t >= 1 ? 1 : 1 - Math.exp(-zw * t) * (Math.cos(wd * t) + (zw / wd) * Math.sin(wd * t)));
+};
+
+const PROFILES = {
+  pinPop:   () => ({ duration: TIMING.pinPop.duration, ease: spring(TIMING.pinPop.damping), opacityEase: easeOut }),
+  pop:      () => ({ duration: TIMING.pop.duration, ease: spring(TIMING.pop.damping), opacityEase: easeOut }),
+  fade:     () => ({ duration: TIMING.fade.duration, ease: easeOut }),
+  zoom:     () => ({ duration: TIMING.zoom.duration, ease: easeInOut }),
+  lineDraw: () => ({ duration: TIMING.lineDraw.duration, ease: easeInOut }),
+  lift:     () => ({ duration: TIMING.lift.duration, ease: easeOut }),
+};
+
+/* ---------- pin groups (Figma "Group 1/2/3/5"; coords relative to each group) ---------- */
+const PINS = [
+  { key: 'pin1', left: 18, top: 230, origin: [78, 148], tooltip: [16, 96], photos: [
+    { x: 0, y: 0, w: 121.418, h: 130.618, t: 'rotate(-13.18deg)', cw: 98.701, ch: 111.039, src: 'pin1-a.jpg' },
+    { x: 43.24, y: 15.96, w: 104.297, h: 113.207, t: 'rotate(10.99deg)', cw: 87.138, ch: 98.401, src: 'pin1-b.jpg' } ] },
+  { key: 'pin2', left: 96, top: 42, origin: [69.6, 145], tooltip: [7.6, 93], photos: [
+    { x: 0, y: 0, w: 107.952, h: 124.419, t: 'rotate(-8.16deg) skewX(-1.09deg)', cw: 95.154, ch: 111.767, src: 'pin2-a.jpg' },
+    { x: 34.78, y: 15.45, w: 104.402, h: 106.597, t: 'rotate(11.99deg) skewX(2.07deg)', cw: 91.053, ch: 89.006, src: 'pin2-b.jpg' } ] },
+  { key: 'pin3', left: 348, top: 309, origin: [68, 134.35], tooltip: [6, 82.35], photos: [
+    { x: 0, y: 3.27, w: 108.829, h: 112.602, t: 'rotate(166.51deg) scaleY(-1)', cw: 89.272, ch: 94.377, src: 'pin3-a.jpg' },
+    { x: 22.38, y: 0, w: 103.955, h: 114.326, t: 'rotate(-171.09deg) scaleY(-1)', cw: 89.272, ch: 101.721, src: 'pin3-b.jpg' } ] },
+  // top-right pin — the one that stays for steps 2 and 3
+  { key: 'pinKeep', left: 311, top: 74, origin: [62, 133.38], tooltip: [0, 81.38], photos: [
+    { x: 31.09, y: 1.93, w: 108.695, h: 112.464, t: 'rotate(13.49deg)', cw: 89.162, ch: 94.261, src: 'pin3-a.jpg' },
+    { x: 1.84, y: 0, w: 97.405, h: 108.954, t: 'rotate(-4.35deg)', cw: 89.89, ch: 102.426, src: 'pin3-b.jpg' } ] },
+];
+
+const pinsHost = document.getElementById('pins');
+for (const p of PINS) {
+  const g = document.createElement('div');
+  g.className = 'pin-group layer';
+  g.dataset.el = p.key;
+  g.style.cssText = `left:${p.left}px;top:${p.top}px;width:1px;height:1px;--ox:${p.origin[0]}px;--oy:${p.origin[1]}px`;
+  g.innerHTML = p.photos.map(ph => `
+    <div class="photo" style="left:${ph.x}px;top:${ph.y}px;width:${ph.w}px;height:${ph.h}px">
+      <div class="photo__card" style="width:${ph.cw}px;height:${ph.ch}px;transform:${ph.t}">
+        <div class="photo__inner"><img src="assets/${ph.src}" alt=""></div>
+      </div>
+    </div>`).join('') + `
+    <div class="tooltip" style="left:${p.tooltip[0]}px;top:${p.tooltip[1]}px">
+      <div class="tooltip__body"><img src="assets/lightning.svg" alt=""><span class="tooltip__label">30% off</span></div>
+      <div class="tooltip__tail"><img src="assets/tooltip-tail.svg" alt=""></div>
+    </div>`;
+  pinsHost.appendChild(g);
+}
+
+/* =====================================================================
+   STATES — what every layer looks like at rest in each state.
+   0 = before the section is reached, 1–3 = the three steps.
+   ===================================================================== */
+const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
+const LIFT = () => -TIMING.lift.distance;
+const S = {
+  map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -131, y: -149, s: ZOOM }, { x: -131, y: -149, s: ZOOM }],
+  tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
+  phone:      [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
+  route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: LIFT(), d: 1 }],
+  me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: -39.16, y: -32.99, s: ZOOM }, { o: 0, x: -39.16, y: -32.99 + LIFT(), s: ZOOM }],
+  pin1:       [{ o: 1, s: 0 }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pin2:       [{ o: 1, s: 0 }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pin3:       [{ o: 1, s: 0 }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pinKeep:    [{ o: 1, s: 0, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 + LIFT() }],
+  card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: LIFT() }],
+  chipPink:   [{ o: 0 }, { o: 1 }, { o: 0 }, { o: 0 }],
+  chipPurple: [{ o: 0 }, { o: 1 }, { o: 0 }, { o: 0 }],
+  chipOrange: [{ o: 0 }, { o: 1 }, { o: 0 }, { o: 0 }],
+  tag:        [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
+};
+// the pop-in start scale is tweakable
+for (const k of ['phone', 'card', 'tag']) S[k].forEach(st => { if (st.s !== 1) st.s = TIMING.pop.fromScale; });
+
+/* =====================================================================
+   CHOREOGRAPHY — transition INTO step n, as stages that run one after another.
+   Scrolling back plays the same stages in reverse order, time-reversed.
+   ===================================================================== */
+const TRANSITIONS = {
+  1: [
+    ['pin1', 'pin2', 'pin3', 'pinKeep'].map((k, i) => ({ k, p: 'pinPop', delay: i * TIMING.pinPop.stagger })),
+    ['chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
+  ],
+  2: [
+    [...['pin1', 'pin2', 'pin3', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
+     ...['map', 'me', 'pinKeep'].map(k => ({ k, p: 'zoom' }))],
+    [{ k: 'route', p: 'lineDraw' }],
+    [{ k: 'card', p: 'pop' }],
+  ],
+  3: [
+    ['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'lift' })),
+    [{ k: 'tint', p: 'fade' }],
+    [{ k: 'phone', p: 'pop' }],
+    [{ k: 'tag', p: 'pop' }],
+  ],
+};
+
+/* ---------- layers ---------- */
+const stage = document.getElementById('stage');
+const routePath = document.getElementById('route-path');
+const L = {};
+function bindLayers(root) {
+  for (const el of root.querySelectorAll('[data-el]')) {
+    const k = el.dataset.el;
+    L[k] = { el, st: { ...S[k][0] } };
+    render(k);
+  }
+}
+function render(k) {
+  const { el, st } = L[k];
+  if ('o' in st) el.style.opacity = st.o;
+  if (k === 'route') { routePath.style.strokeDashoffset = 1 - st.d; }
+  const x = st.x || 0, y = st.y || 0, s = st.s ?? 1;
+  if ('x' in st || 'y' in st || 's' in st) el.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+}
+function applyState(n) { for (const k in L) { Object.assign(L[k].st, S[k][n]); render(k); } }
+
+/* ---------- tiny tween engine ---------- */
+let timeScale = 1;
+const tweens = new Set();
+let rafId = 0, last = 0;
+function tick(now) {
+  const dt = Math.min(64, now - last) * timeScale;
+  last = now;
+  for (const tw of tweens) tw.step(dt);
+  rafId = tweens.size ? requestAnimationFrame(tick) : 0;
+}
+function tween(k, to, { duration, ease, opacityEase }, { delay = 0, reverse = false } = {}) {
+  const from = { ...L[k].st };
+  const rev = e => (reverse ? t => 1 - e(1 - t) : e);
+  const e = rev(ease), eo = rev(opacityEase || ease);
+  return new Promise(resolve => {
+    let elapsed = 0;
+    const tw = {
+      step(dt) {
+        elapsed += dt;
+        const t = Math.max(0, Math.min(1, (elapsed - delay) / duration));
+        for (const p in to) {
+          const f = p === 'o' ? eo : e;
+          L[k].st[p] = from[p] + (to[p] - from[p]) * f(t);
+        }
+        render(k);
+        if (t >= 1) { Object.assign(L[k].st, to); render(k); tweens.delete(tw); resolve(); }
+      },
+    };
+    tweens.add(tw);
+    if (!rafId) { last = performance.now(); rafId = requestAnimationFrame(tick); }
+  });
+}
+
+// play the transition into step n (forward: n-1 → n) or out of it (reverse: n → n-1)
+async function play(n, forward) {
+  const stages = forward ? TRANSITIONS[n] : [...TRANSITIONS[n]].reverse();
+  const dest = forward ? n : n - 1;
+  for (const items of stages) {
+    const maxDelay = Math.max(...items.map(i => i.delay || 0));
+    await Promise.all(items.map(i =>
+      tween(i.k, S[i.k][dest], PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward })));
+  }
+}
+
+/* ---------- travelling gradient on the route (step 2 only) ---------- */
+const glowPath = document.getElementById('route-glow');
+const glowDots = document.getElementById('glow-dots');
+const routeLen = glowPath.getTotalLength(); // glow path has no pathLength, so lengths are real units
+let glowRaf = 0;
+function buildGlow() {
+  glowDots.innerHTML = '';
+  for (let i = 0; i < TIMING.glow.tail; i++) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('r', 16 - i);
+    c.setAttribute('fill', 'url(#glow-dot)');
+    c.setAttribute('fill-opacity', (1 - i / TIMING.glow.tail).toFixed(2));
+    glowDots.appendChild(c);
+  }
+}
+function startGlow() {
+  if (glowRaf || reduced) return;
+  buildGlow();
+  const t0 = performance.now();
+  const total = TIMING.glow.duration + TIMING.glow.pause;
+  const loop = now => {
+    const phase = ((now - t0) % total) / TIMING.glow.duration;  // > 1 during the pause
+    const env = phase > 1 ? 0 : Math.min(1, phase / 0.1, (1 - phase) / 0.15);
+    glowPath.setAttribute('opacity', env.toFixed(3));
+    const head = Math.min(phase, 1) * routeLen;
+    [...glowDots.children].forEach((c, i) => {
+      const pt = glowPath.getPointAtLength(Math.max(0, head - i * 9));
+      c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
+    });
+    glowRaf = requestAnimationFrame(loop);
+  };
+  glowRaf = requestAnimationFrame(loop);
+}
+function stopGlow() {
+  cancelAnimationFrame(glowRaf); glowRaf = 0;
+  glowPath.setAttribute('opacity', 0);
+}
+
+/* =====================================================================
+   CONTROLLER — scroll picks a target step; the illustration walks to it
+   one transition at a time, each on its own timing.
+   ===================================================================== */
+const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = reduceMQ.matches;
+let settled = 0, target = 0, running = false;
+
+function setTarget(n) {
+  if (n === target) return;
+  target = n;
+  updateCopy();
+  if (reduced) return crossfadeTo(n);
+  if (running) timeScale = TIMING.catchUp; else run();
+}
+async function run() {
+  running = true;
+  stopGlow();
+  while (settled !== target) {
+    const dir = Math.sign(target - settled);
+    timeScale = Math.abs(target - settled) > 1 ? TIMING.catchUp : 1;
+    await play(dir > 0 ? settled + 1 : settled, dir > 0);
+    settled += dir;
+  }
+  running = false;
+  timeScale = 1;
+  if (settled === 2) startGlow();
+}
+
+// reduced motion: snapshot the current picture, jump to the new state underneath, fade the snapshot out
+let xfadeEl = null;
+function crossfadeTo(n) {
+  xfadeEl?.remove();
+  const snap = stage.cloneNode(true);
+  snap.removeAttribute('id');
+  snap.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  snap.classList.add('xfade');
+  snap.style.transform = stage.style.transform;
+  stage.parentNode.appendChild(snap);
+  xfadeEl = snap;
+  applyState(n);
+  settled = n;
+  snap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: TIMING.crossfade, easing: 'ease-out', fill: 'forwards' })
+    .finished.then(() => { snap.remove(); if (xfadeEl === snap) xfadeEl = null; });
+}
+reduceMQ.addEventListener('change', e => {
+  reduced = e.matches;
+  tweens.clear(); running = false; timeScale = 1;
+  stopGlow();
+  applyState(target); settled = target;
+  if (!reduced && settled === 2) startGlow();
+});
+
+/* ---------- copy column ---------- */
+const stepBtns = [...document.querySelectorAll('.step')];
+const ARIA = [
+  'Map showing nearby venues with 30% off offers',
+  'Map showing nearby venues with 30% off offers',
+  'Route from your location to the venue. Arrive between 12:30PM and 1:00PM',
+  'Phone showing the claim confirmation screen',
+];
+function updateCopy() {
+  const active = Math.max(1, target);
+  stepBtns.forEach((b, i) => {
+    const n = i + 1;
+    b.classList.toggle('is-active', n === active);
+    b.classList.toggle('is-done', n < active);
+    if (n === active) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+  });
+  document.getElementById('ill-wrap').setAttribute('aria-label', ARIA[target]);
+}
+
+/* ---------- scroll + layout ---------- */
+const section = document.getElementById('hiw');
+const STEPS = 3;
+const vh = () => window.innerHeight;
+function sizeSection() {
+  section.style.height = `${(1 + STEPS * TIMING.stepHoldVh) * 100}vh`;
+}
+// Each step's bar fills with green as you scroll through that step's hold:
+// finished steps are full, upcoming ones empty, the active one starts at the 13px cap.
+const fills = stepBtns.map(b => b.querySelector('.step__fill'));
+function updateFills(top) {
+  const hold = vh() * TIMING.stepHoldVh;
+  fills.forEach((f, i) => {
+    const p = Math.min(1, Math.max(0, (-top - i * hold) / hold));
+    const reached = i === 0 || -top >= i * hold;
+    f.style.height = reached ? `max(${TIMING.fillMinPx}px, ${p * 100}%)` : '0px';
+  });
+}
+function onScroll() {
+  const top = section.getBoundingClientRect().top;
+  updateFills(top);
+  if (top > vh() * TIMING.enterAt) return setTarget(0);
+  const hold = vh() * TIMING.stepHoldVh;
+  setTarget(Math.min(STEPS, Math.max(1, Math.floor(-top / hold) + 1)));
+}
+let scrollQueued = false;
+addEventListener('scroll', () => {
+  if (scrollQueued) return;
+  scrollQueued = true;
+  requestAnimationFrame(() => { scrollQueued = false; onScroll(); });
+}, { passive: true });
+
+stepBtns.forEach((b, i) => b.addEventListener('click', () => {
+  const y = section.getBoundingClientRect().top + scrollY + i * vh() * TIMING.stepHoldVh + 2;
+  scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
+}));
+
+// Illustration scales to fit. Its content overflows the 500×460 map
+// (card −96px left, pills −30px top / +539px right / +482px bottom).
+const wrap = document.getElementById('ill-wrap');
+function layout() {
+  if (innerWidth < 900) {
+    const w = wrap.clientWidth;
+    const s = Math.min(1, w / 635, (vh() * 0.46) / 512);
+    wrap.style.height = `${512 * s}px`;
+    wrap.style.width = '';
+    stage.style.transform = `translate(${w / 2 - 221.5 * s}px, ${30 * s}px) scale(${s})`;
+  } else {
+    const s = Math.min(1, (vh() - 96) / 512);
+    wrap.style.width = `${500 * s}px`;
+    wrap.style.height = `${460 * s}px`;
+    stage.style.transform = `scale(${s})`;
+  }
+  if (xfadeEl) xfadeEl.style.transform = stage.style.transform;
+}
+addEventListener('resize', () => { layout(); onScroll(); });
+
+bindLayers(stage);
+sizeSection();
+layout();
+updateCopy();
+onScroll();
+
+// handy for tweaking in the console: HIW.TIMING.fade.duration = 400
+window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, running }; } };
+</script>
+</body>
+</html>
