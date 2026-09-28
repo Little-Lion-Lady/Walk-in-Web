@@ -376,9 +376,9 @@
    TIMING — every tweakable number lives here (ms unless noted)
    ===================================================================== */
 const TIMING = {
-  stepHoldVh: 1,          // scroll distance each step holds, in viewport heights
+  stepHoldVh: 0.6,        // scroll distance each step holds, in viewport heights
   enterAt: 0.5,           // step 1 plays once the section top is above this fraction of the viewport
-  pinPop:   { duration: 420, stagger: 80, damping: 0.55 },  // scale 0 → 1, slight overshoot
+  pinPop:   { duration: 420, stagger: 80, fromScale: 0.6, damping: 0.8 }, // soft pop, barely any overshoot
   pop:      { duration: 300, fromScale: 0.8, damping: 0.75 }, // light spring
   fade:     { duration: 250 },                               // ease-out
   zoom:     { duration: 500 },                               // step 2 map zoom, ease-in-out
@@ -387,7 +387,10 @@ const TIMING = {
   glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
   catchUp: 3,             // playback speed while the user scrolls past several steps at once
   crossfade: 300,         // reduced-motion state swap
-  fillMinPx: 13,          // green bar on the active step never gets shorter than this (Figma's cap)
+  // step 1 pills appear with scroll, one after another. Each fades over `length` of step 1's
+  // scroll progress (0–1), the next starting `stagger` later.
+  pills:    { start: 0.05, stagger: 0.28, length: 0.35, rise: 8, fadeDuration: 400 },
+  scrubSmoothing: 0.16,   // 0–1: how quickly the progress bars and pills catch up with the scroll
 };
 
 /* ---------- easing ---------- */
@@ -403,6 +406,7 @@ const PROFILES = {
   pinPop:   () => ({ duration: TIMING.pinPop.duration, ease: spring(TIMING.pinPop.damping), opacityEase: easeOut }),
   pop:      () => ({ duration: TIMING.pop.duration, ease: spring(TIMING.pop.damping), opacityEase: easeOut }),
   fade:     () => ({ duration: TIMING.fade.duration, ease: easeOut }),
+  pillFade: () => ({ duration: TIMING.pills.fadeDuration, ease: easeInOut }),
   zoom:     () => ({ duration: TIMING.zoom.duration, ease: easeInOut }),
   lineDraw: () => ({ duration: TIMING.lineDraw.duration, ease: easeInOut }),
   lift:     () => ({ duration: TIMING.lift.duration, ease: easeOut }),
@@ -450,20 +454,21 @@ for (const p of PINS) {
    ===================================================================== */
 const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
 const LIFT = () => -TIMING.lift.distance;
+const PIN_FROM = TIMING.pinPop.fromScale;
 const S = {
   map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -131, y: -149, s: ZOOM }, { x: -131, y: -149, s: ZOOM }],
   tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
   phone:      [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
   route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: LIFT(), d: 1 }],
   me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: -39.16, y: -32.99, s: ZOOM }, { o: 0, x: -39.16, y: -32.99 + LIFT(), s: ZOOM }],
-  pin1:       [{ o: 1, s: 0 }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pin2:       [{ o: 1, s: 0 }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pin3:       [{ o: 1, s: 0 }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pinKeep:    [{ o: 1, s: 0, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 + LIFT() }],
+  pin1:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pin2:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pin3:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 + LIFT() }],
   card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: LIFT() }],
-  chipPink:   [{ o: 0 }, { o: 1 }, { o: 0 }, { o: 0 }],
-  chipPurple: [{ o: 0 }, { o: 1 }, { o: 0 }, { o: 0 }],
-  chipOrange: [{ o: 0 }, { o: 1 }, { o: 0 }, { o: 0 }],
+  chipPink:   [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
+  chipPurple: [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
+  chipOrange: [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
   tag:        [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
 };
 // the pop-in start scale is tweakable
@@ -473,10 +478,11 @@ for (const k of ['phone', 'card', 'tag']) S[k].forEach(st => { if (st.s !== 1) s
    CHOREOGRAPHY — transition INTO step n, as stages that run one after another.
    Scrolling back plays the same stages in reverse order, time-reversed.
    ===================================================================== */
+const PILLS = ['chipPink', 'chipPurple', 'chipOrange'];   // order they appear in
 const TRANSITIONS = {
   1: [
     ['pin1', 'pin2', 'pin3', 'pinKeep'].map((k, i) => ({ k, p: 'pinPop', delay: i * TIMING.pinPop.stagger })),
-    ['chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
+    PILLS.map(k => ({ k, p: 'pillFade' })),
   ],
   2: [
     [...['pin1', 'pin2', 'pin3', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
@@ -510,7 +516,20 @@ function render(k) {
   const x = st.x || 0, y = st.y || 0, s = st.s ?? 1;
   if ('x' in st || 'y' in st || 's' in st) el.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
 }
-function applyState(n) { for (const k in L) { Object.assign(L[k].st, S[k][n]); render(k); } }
+// Resting state of layer k in state n. Pills in step 1 depend on how far into step 1 you've scrolled.
+let stepProgress = [0, 0, 0];
+const smoothstep = t => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
+function pillOpacity(i) {
+  const { start, stagger, length } = TIMING.pills;
+  return smoothstep((stepProgress[0] - start - i * stagger) / length);
+}
+function getState(k, n) {
+  const i = PILLS.indexOf(k);
+  if (i < 0 || n !== 1) return S[k][n];
+  const o = pillOpacity(i);
+  return { o, y: reduced ? 0 : (1 - o) * TIMING.pills.rise };
+}
+function applyState(n) { for (const k in L) { Object.assign(L[k].st, getState(k, n)); render(k); } }
 
 /* ---------- tiny tween engine ---------- */
 let timeScale = 1;
@@ -552,7 +571,7 @@ async function play(n, forward) {
   for (const items of stages) {
     const maxDelay = Math.max(...items.map(i => i.delay || 0));
     await Promise.all(items.map(i =>
-      tween(i.k, S[i.k][dest], PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward })));
+      tween(i.k, getState(i.k, dest), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward })));
   }
 }
 
@@ -621,6 +640,7 @@ async function run() {
   running = false;
   timeScale = 1;
   if (settled === 2) startGlow();
+  startScrub();
 }
 
 // reduced motion: snapshot the current picture, jump to the new state underneath, fade the snapshot out
@@ -673,20 +693,43 @@ const vh = () => window.innerHeight;
 function sizeSection() {
   section.style.height = `${(1 + STEPS * TIMING.stepHoldVh) * 100}vh`;
 }
-// Each step's bar fills with green as you scroll through that step's hold:
-// finished steps are full, upcoming ones empty, the active one starts at the 13px cap.
+// Scroll-linked values (progress bars, step 1 pills) chase the scroll position with a
+// little smoothing, so wheel ticks don't show up as jumps.
 const fills = stepBtns.map(b => b.querySelector('.step__fill'));
-function updateFills(top) {
-  const hold = vh() * TIMING.stepHoldVh;
+const fillNow = [0, 0, 0];
+let scrubRaf = 0, scrubLast = 0;
+function startScrub() {
+  if (!scrubRaf) { scrubLast = performance.now(); scrubRaf = requestAnimationFrame(scrubTick); }
+}
+function scrubTick(now) {
+  const k = 1 - Math.pow(1 - TIMING.scrubSmoothing, Math.min(64, now - scrubLast) / 16.7);
+  scrubLast = now;
+  let moving = false;
+  const follow = (cur, tgt) => {
+    if (Math.abs(tgt - cur) < 0.001) return tgt;
+    moving = true;
+    return cur + (tgt - cur) * k;
+  };
   fills.forEach((f, i) => {
-    const p = Math.min(1, Math.max(0, (-top - i * hold) / hold));
-    const reached = i === 0 || -top >= i * hold;
-    f.style.height = reached ? `max(${TIMING.fillMinPx}px, ${p * 100}%)` : '0px';
+    fillNow[i] = follow(fillNow[i], stepProgress[i]);
+    f.style.height = `${fillNow[i] * 100}%`;
   });
+  // pills belong to the scroll only while the illustration is resting on step 1
+  if (settled === 1 && target === 1 && !running) {
+    for (const key of PILLS) {
+      const st = L[key].st, to = getState(key, 1);
+      st.o = follow(st.o, to.o);
+      st.y = follow(st.y, to.y);
+      render(key);
+    }
+  }
+  scrubRaf = moving ? requestAnimationFrame(scrubTick) : 0;
 }
 function onScroll() {
   const top = section.getBoundingClientRect().top;
-  updateFills(top);
+  const hold0 = vh() * TIMING.stepHoldVh;
+  stepProgress = stepProgress.map((_, i) => Math.min(1, Math.max(0, (-top - i * hold0) / hold0)));
+  startScrub();
   if (top > vh() * TIMING.enterAt) return setTarget(0);
   const hold = vh() * TIMING.stepHoldVh;
   setTarget(Math.min(STEPS, Math.max(1, Math.floor(-top / hold) + 1)));
