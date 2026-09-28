@@ -40,17 +40,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- placeholder page around the section ---------- */
-  .filler {
-    min-height: 90vh;
-    display: grid;
-    place-items: center;
-    padding: 40px 16px;
-    background: #f5f6f7;
-    text-align: center;
-  }
-  .filler h2 { font: 400 40px/1.2 var(--font-display); margin: 0 0 8px; }
-  .filler p { margin: 0; color: var(--text-tertiary); }
 
   /* ---------- how it works ---------- */
   .hiw { position: relative; /* height set from JS: 1 + steps × hold */ }
@@ -277,12 +266,6 @@
 </head>
 <body>
 
-<section class="filler" aria-label="Placeholder: content above">
-  <div>
-    <h2>Dine now</h2>
-    <p>Placeholder hero. Scroll down to the “How it works” section.</p>
-  </div>
-</section>
 
 <section class="hiw" id="hiw" aria-labelledby="hiw-title">
   <div class="hiw__pin">
@@ -364,12 +347,6 @@
   </div>
 </section>
 
-<section class="filler" aria-label="Placeholder: content below">
-  <div>
-    <h2>Next section</h2>
-    <p>The “How it works” section has unpinned and the page continues.</p>
-  </div>
-</section>
 
 <script>
 /* =====================================================================
