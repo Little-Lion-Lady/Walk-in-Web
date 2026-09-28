@@ -217,8 +217,11 @@
   .chip--pink { background: var(--pink-600); }
   .chip--purple { background: var(--purple-600); }
   .chip--orange { background: var(--warning-600); }
-  .tag-wrap { left: 297.48px; top: 386.63px; width: 223px; height: 56px; transform-origin: 50% 50%; }
-  .tag-wrap .chip { transform: rotate(-6.6deg); }
+  .tag-wrap { width: 126px; height: 56px; transform-origin: 50% 50%; }
+  .tag-wrap--hi { left: -34px; top: 19.69px; }
+  .tag-wrap--hi .chip { transform: rotate(3.4deg); }
+  .tag-wrap--show { left: 297.48px; top: 412.26px; width: 223px; }
+  .tag-wrap--show .chip { transform: rotate(-6.6deg); }
 
   .card {
     left: -96px; top: 287px; width: 364px;
@@ -290,8 +293,9 @@
     .step__fill { width: calc(var(--p, 0) * (100% - 24px) / 3); }
     .step__body { width: auto; }
     .step.is-active .step__body { color: var(--text-tertiary); }
-    /* keep the arrival card on screen */
+    /* keep the arrival card and the "Say hi!" tag on screen */
     .card { left: -8px; }
+    .tag-wrap--hi { left: -8px; }
   }
 </style>
 </head>
@@ -369,7 +373,10 @@
             <img src="assets/footprints.svg" alt=""><span>Just walk in</span>
           </div>
 
-          <div class="tag-wrap layer" data-el="tag">
+          <div class="tag-wrap tag-wrap--hi layer" data-el="tagHi">
+            <div class="chip chip--pink"><img src="assets/hand.svg" alt=""><span>Say hi!</span></div>
+          </div>
+          <div class="tag-wrap tag-wrap--show layer" data-el="tag">
             <div class="chip chip--orange"><img src="assets/eye.svg" alt=""><span>Show confirmation</span></div>
           </div>
         </div>
@@ -387,11 +394,11 @@ const TIMING = {
   stepHoldVh: 0.6,        // scroll distance each step holds, in viewport heights
   enterAt: 0.5,           // step 1 plays once the section top is above this fraction of the viewport
   pinPop:   { duration: 420, stagger: 80, fromScale: 0.6, damping: 0.8 }, // soft pop, barely any overshoot
-  pop:      { duration: 300, fromScale: 0.8, damping: 0.75 }, // light spring
+  pop:      { duration: 300, fromScale: 0.8, damping: 0.75, stagger: 120 }, // light spring; stagger = gap between the two step 3 tags
   fade:     { duration: 250 },                               // ease-out
   zoom:     { duration: 500 },                               // step 2 map zoom, ease-in-out
   lineDraw: { duration: 600 },                               // ease-in-out
-  lift:     { duration: 300, distance: 24 },                 // step 3 move-up-and-fade, ease-out
+  toStep3:  { fadeOut: 300, blur: 450 },                     // step 2 layers fade out (ease-out) while the map blurs and turns green (ease-in-out)
   phoneRise: { duration: 270, distance: 420 },               // step 3 phone slides up into the map from below its bottom edge, ease-out
   glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
   catchUp: 3,             // playback speed while the user scrolls past several steps at once
@@ -419,7 +426,8 @@ const PROFILES = {
   pillFade: () => ({ duration: TIMING.pills.fadeDuration, ease: easeInOut }),
   zoom:     () => ({ duration: TIMING.zoom.duration, ease: easeInOut }),
   lineDraw: () => ({ duration: TIMING.lineDraw.duration, ease: easeInOut }),
-  lift:     () => ({ duration: TIMING.lift.duration, ease: easeOut }),
+  fadeOut:  () => ({ duration: TIMING.toStep3.fadeOut, ease: easeOut }),
+  blur:     () => ({ duration: TIMING.toStep3.blur, ease: easeInOut }),
   rise:     () => ({ duration: TIMING.phoneRise.duration, ease: easeOut }),
 };
 
@@ -464,27 +472,27 @@ for (const p of PINS) {
    0 = before the section is reached, 1–3 = the three steps.
    ===================================================================== */
 const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
-const LIFT = () => -TIMING.lift.distance;
 const PIN_FROM = TIMING.pinPop.fromScale;
 const RISE = TIMING.phoneRise.distance;
 const S = {
   map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -131, y: -149, s: ZOOM }, { x: -131, y: -149, s: ZOOM }],
   tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
   phone:      [{ y: RISE }, { y: RISE }, { y: RISE }, { y: 0 }], // hidden below the map's clipped bottom edge
-  route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: LIFT(), d: 1 }],
-  me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: -39.16, y: -32.99, s: ZOOM }, { o: 0, x: -39.16, y: -32.99 + LIFT(), s: ZOOM }],
+  route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: 0, d: 1 }],
+  me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: -39.16, y: -32.99, s: ZOOM }, { o: 0, x: -39.16, y: -32.99, s: ZOOM }],
   pin1:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin2:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin3:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 + LIFT() }],
-  card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: LIFT() }],
+  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 }],
+  card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: 0 }],
   chipPink:   [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
   chipPurple: [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
   chipOrange: [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
+  tagHi:      [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
   tag:        [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
 };
 // the pop-in start scale is tweakable
-for (const k of ['card', 'tag']) S[k].forEach(st => { if (st.s !== 1) st.s = TIMING.pop.fromScale; });
+for (const k of ['card', 'tagHi', 'tag']) S[k].forEach(st => { if (st.s !== 1) st.s = TIMING.pop.fromScale; });
 
 /* =====================================================================
    CHOREOGRAPHY — transition INTO step n, as stages that run one after another.
@@ -503,10 +511,10 @@ const TRANSITIONS = {
     [{ k: 'card', p: 'pop' }],
   ],
   3: [
-    ['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'lift' })),
-    [{ k: 'tint', p: 'fade' }],
+    // step 2 fades away in place while the map blurs and turns green
+    [...['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
     [{ k: 'phone', p: 'rise' }],
-    [{ k: 'tag', p: 'pop' }],
+    [{ k: 'tagHi', p: 'pop' }, { k: 'tag', p: 'pop', delay: TIMING.pop.stagger }],
   ],
 };
 
