@@ -520,10 +520,11 @@ function render(k) {
 }
 // Resting state of layer k in state n. Pills in step 1 depend on how far into step 1 you've scrolled.
 let stepProgress = [0, 0, 0];
+let pillProgress = 0;   // step 1 progress the pills follow (the destination's, during a step jump)
 const smoothstep = t => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
 function pillOpacity(i) {
   const { start, stagger, length } = TIMING.pills;
-  return smoothstep((stepProgress[0] - start - i * stagger) / length);
+  return smoothstep((pillProgress - start - i * stagger) / length);
 }
 function getState(k, n) {
   const i = PILLS.indexOf(k);
@@ -560,6 +561,7 @@ function tween(k, to, { duration, ease, opacityEase }, { delay = 0, reverse = fa
         render(k);
         if (t >= 1) { Object.assign(L[k].st, to); render(k); tweens.delete(tw); resolve(); }
       },
+      cancel() { tweens.delete(tw); resolve(); },   // stops where it is
     };
     tweens.add(tw);
     if (!rafId) { last = performance.now(); rafId = requestAnimationFrame(tick); }
@@ -567,10 +569,14 @@ function tween(k, to, { duration, ease, opacityEase }, { delay = 0, reverse = fa
 }
 
 // play the transition into step n (forward: n-1 → n) or out of it (reverse: n → n-1)
-async function play(n, forward) {
+function cancelAll() { for (const tw of [...tweens]) tw.cancel(); }
+let gen = 0;   // bumped to abandon whatever sequence is playing
+let heading = null;   // state the in-flight transition is heading to
+async function play(n, forward, g) {
   const stages = forward ? TRANSITIONS[n] : [...TRANSITIONS[n]].reverse();
   const dest = forward ? n : n - 1;
   for (const items of stages) {
+    if (g !== gen) return;
     const maxDelay = Math.max(...items.map(i => i.delay || 0));
     await Promise.all(items.map(i =>
       tween(i.k, getState(i.k, dest), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward })));
@@ -623,7 +629,9 @@ const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
 let reduced = reduceMQ.matches;
 let settled = 0, target = 0, running = false;
 
+let jumpTo = null;   // step we're smooth-scrolling to after a tap
 function setTarget(n) {
+  if (jumpTo !== null) { if (n === jumpTo) jumpTo = null; return; }
   if (n === target) return;
   target = n;
   updateCopy();
@@ -631,13 +639,17 @@ function setTarget(n) {
   if (running) timeScale = TIMING.catchUp; else run();
 }
 async function run() {
+  const g = gen;
   running = true;
   stopGlow();
   while (settled !== target) {
     const dir = Math.sign(target - settled);
     timeScale = Math.abs(target - settled) > 1 ? TIMING.catchUp : 1;
-    await play(dir > 0 ? settled + 1 : settled, dir > 0);
+    heading = settled + dir;
+    await play(dir > 0 ? settled + 1 : settled, dir > 0, g);
+    if (g !== gen) return;   // a step jump took over
     settled += dir;
+    heading = null;
   }
   running = false;
   timeScale = 1;
@@ -663,7 +675,7 @@ function crossfadeTo(n) {
 }
 reduceMQ.addEventListener('change', e => {
   reduced = e.matches;
-  tweens.clear(); running = false; timeScale = 1;
+  gen++; cancelAll(); running = false; timeScale = 1;
   stopGlow();
   applyState(target); settled = target;
   if (!reduced && settled === 2) startGlow();
@@ -731,6 +743,7 @@ function onScroll() {
   const top = section.getBoundingClientRect().top;
   const hold0 = vh() * TIMING.stepHoldVh;
   stepProgress = stepProgress.map((_, i) => Math.min(1, Math.max(0, (-top - i * hold0) / hold0)));
+  if (jumpTo === null) pillProgress = stepProgress[0];
   startScrub();
   if (top > vh() * TIMING.enterAt) return setTarget(0);
   const hold = vh() * TIMING.stepHoldVh;
@@ -743,10 +756,29 @@ addEventListener('scroll', () => {
   requestAnimationFrame(() => { scrollQueued = false; onScroll(); });
 }, { passive: true });
 
+// Tapping a step jumps straight to it: steps in between are skipped (a quick crossfade
+// to the state just before the chosen one), then only the chosen step's animation plays.
 stepBtns.forEach((b, i) => b.addEventListener('click', () => {
+  const n = i + 1;
   const y = section.getBoundingClientRect().top + scrollY + i * vh() * TIMING.stepHoldVh + 2;
+  if (n !== target || running) {
+    // interrupted mid-transition back to where it came from: play that transition in reverse
+    if (running && heading !== null && n === settled) settled = heading;
+    gen++; cancelAll(); stopGlow(); running = false; timeScale = 1; heading = null;
+    pillProgress = 0;          // arriving at the start of a step, so step 1's pills are still hidden
+    target = n;
+    updateCopy();
+    if (reduced) crossfadeTo(n);
+    else {
+      if (Math.abs(n - settled) > 1) crossfadeTo(n - Math.sign(n - settled));
+      run();
+    }
+    jumpTo = n;
+  }
   scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
 }));
+// the user taking over the scroll ends a jump
+for (const type of ['wheel', 'touchstart', 'keydown']) addEventListener(type, () => { jumpTo = null; }, { passive: true });
 
 // Illustration scales to fit. Its content overflows the 500×460 map
 // (card −96px left, pills −30px top / +539px right / +482px bottom).
