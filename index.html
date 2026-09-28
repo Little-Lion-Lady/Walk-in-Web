@@ -147,11 +147,11 @@
     box-shadow: inset 0 0 0 1px var(--border-alpha);
     pointer-events: none;
   }
-  .map__img { position: absolute; left: -173px; top: -288px; width: 972px; height: 884px; transform-origin: 0 0; }
+  .map__img { position: absolute; left: -161px; top: -148px; width: 838px; height: 762px; object-fit: cover; transform-origin: 0 0; }
   /* step 3: the map goes soft and green. A blurred copy of the map with teal-50 multiplied over it.
      (filter, not backdrop-filter: the fading opacity would stop a backdrop blur from working) */
   .tint { position: absolute; inset: 0; }
-  .tint img { position: absolute; left: -262px; top: -407px; width: 1189px; height: 1081px; filter: blur(5px); }
+  .tint img { position: absolute; left: -331px; top: -311px; width: 1189px; height: 1081px; object-fit: cover; filter: blur(5px); }
   .tint::after { content: ""; position: absolute; inset: 0; background: var(--teal-50); mix-blend-mode: multiply; }
   .phone {
     left: 117px; top: 54px; width: 279px; height: 665px;
@@ -448,14 +448,14 @@ const PINS = [
   { key: 'pin1', left: 18, top: 230, origin: [78, 148], tooltip: [16, 96], photos: [
     { x: 0, y: 0, w: 121.418, h: 130.618, t: 'rotate(-13.18deg)', cw: 98.701, ch: 111.039, src: 'pin1-a.jpg' },
     { x: 43.24, y: 15.96, w: 104.297, h: 113.207, t: 'rotate(10.99deg)', cw: 87.138, ch: 98.401, src: 'pin1-b.jpg' } ] },
-  { key: 'pin2', left: 85, top: 45, origin: [69.6, 145], tooltip: [7.6, 93], photos: [
+  { key: 'pin2', left: 85, top: 40, origin: [69.6, 145], tooltip: [7.6, 93], photos: [
     { x: 0, y: 0, w: 107.952, h: 124.419, t: 'rotate(-8.16deg) skewX(-1.09deg)', cw: 95.154, ch: 111.767, src: 'pin2-a.jpg' },
     { x: 34.78, y: 15.45, w: 104.402, h: 106.597, t: 'rotate(11.99deg) skewX(2.07deg)', cw: 91.053, ch: 89.006, src: 'pin2-b.jpg' } ] },
   { key: 'pin3', left: 341, top: 308, origin: [68, 134.35], tooltip: [6, 82.35], photos: [
     { x: 0, y: 3.27, w: 108.829, h: 112.602, t: 'rotate(166.51deg) scaleY(-1)', cw: 89.272, ch: 94.377, src: 'pin3-a.jpg' },
     { x: 22.38, y: 0, w: 103.955, h: 114.326, t: 'rotate(-171.09deg) scaleY(-1)', cw: 89.272, ch: 101.721, src: 'pin3-b.jpg' } ] },
   // top-right pin — stays for step 2, at the end of the route
-  { key: 'pinKeep', left: 313, top: 57, origin: [62, 133.38], tooltip: [0, 81.38], photos: [
+  { key: 'pinKeep', left: 331, top: 52, origin: [62, 133.38], tooltip: [0, 81.38], photos: [
     { x: 31.09, y: 1.93, w: 108.695, h: 112.464, t: 'rotate(13.49deg)', cw: 89.162, ch: 94.261, src: 'pin3-a.jpg' },
     { x: 1.84, y: 0, w: 97.405, h: 108.954, t: 'rotate(-4.35deg)', cw: 89.89, ch: 102.426, src: 'pin3-b.jpg' } ] },
 ];
@@ -483,21 +483,22 @@ for (const p of PINS) {
    STATES — what every layer looks like at rest in each state.
    0 = before the section is reached, 1–3 = the three steps.
    ===================================================================== */
-const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
+const ZOOM = 1189 / 838;             // step 2 map is the step 1 map scaled up
+const ME_ZOOM = 1189 / 972;          // the dot and cone grow a little less than the map
 const PIN_FROM = TIMING.pinPop.fromScale;
 const TURN = 43.8;   // degrees: the cone turns from facing up-right to facing along the route's first leg
 const POP_OUT = { o: 0, s: TIMING.pop.fromScale };
 const RISE = TIMING.phoneRise.distance;
 const S = {
-  map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -89, y: -119, s: ZOOM }, { x: -89, y: -119, s: ZOOM }],
+  map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -170, y: -163, s: ZOOM }, { x: -170, y: -163, s: ZOOM }],
   tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
   phone:      [{ y: RISE }, { y: RISE }, { y: RISE }, { y: 0 }], // hidden below the map's clipped bottom edge
   route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: 0, d: 1 }],
-  me:         [{ o: 1, x: 0, y: 0, s: 1, r: 0 }, { o: 1, x: 0, y: 0, s: 1, r: 0 }, { o: 1, x: 1.14, y: 1.1, s: ZOOM, r: TURN }, { o: 0, x: 1.14, y: 1.1, s: ZOOM, r: TURN }],
+  me:         [{ o: 1, x: 0, y: 0, s: 1, r: 0 }, { o: 1, x: 0, y: 0, s: 1, r: 0 }, { o: 1, x: 1.14, y: 1.1, s: ME_ZOOM, r: TURN }, { o: 0, x: 1.14, y: 1.1, s: ME_ZOOM, r: TURN }],
   pin1:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin2:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin3:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: 31.5, y: -14.38 }, { o: 0, s: 1, x: 31.5, y: -14.38 }],
+  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: 13.5, y: -9.38 }, { o: 0, s: 1, x: 13.5, y: -9.38 }],
   card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: 0 }],
   chipPink:   [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
   chipPurple: [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
