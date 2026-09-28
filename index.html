@@ -12,6 +12,7 @@
     --text-primary: #0c1118;
     --text-tertiary: #48515d;
     --text-quaternary: #5e6570;
+    --teal-50: #e8fcf6;
     --teal-300: #7bdbc6;
     --teal-600: #108570;
     --teal-700: #126d61;
@@ -138,14 +139,19 @@
     isolation: isolate;
   }
   .map__img { position: absolute; left: -174px; top: -268px; width: 972px; height: 884px; transform-origin: 0 0; }
-  .tint { position: absolute; inset: 0; background: linear-gradient(to bottom, #fff, var(--teal-300)); }
-  .tint img { position: absolute; left: -305px; top: -417px; width: 1189px; height: 1081px; mix-blend-mode: soft-light; }
+  /* step 3: the map goes soft and green. A blurred copy of the map with teal-50 multiplied over it.
+     (filter, not backdrop-filter: the fading opacity would stop a backdrop blur from working) */
+  .tint { position: absolute; inset: 0; }
+  .tint img { position: absolute; left: -305px; top: -417px; width: 1189px; height: 1081px; filter: blur(5px); }
+  .tint::after { content: ""; position: absolute; inset: 0; background: var(--teal-50); mix-blend-mode: multiply; }
   .phone {
     left: 116px; top: 53px; width: 279px; height: 665px;
     border: 10px solid var(--phone-frame);
-    border-radius: 40px 40px 24px 24px;
+    border-radius: 32px 32px 24px 24px;
+    background: var(--phone-frame); /* the screen's 32px corners sit under the bezel, as in Figma */
+    box-shadow: var(--shadow-lg);
   }
-  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 30px 30px 24px 24px; } /* top = frame radius − 10px border */
+  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 32px 32px 24px 24px; }
 
   .route { left: 203.5px; top: 152px; overflow: visible; }
 
@@ -211,8 +217,8 @@
   .chip--pink { background: var(--pink-600); }
   .chip--purple { background: var(--purple-600); }
   .chip--orange { background: var(--warning-600); }
-  .tag-wrap { left: -39.13px; top: 49.69px; width: 126px; height: 56px; transform-origin: 50% 50%; }
-  .tag-wrap .chip { transform: rotate(3.3deg); }
+  .tag-wrap { left: 297.48px; top: 386.63px; width: 223px; height: 56px; transform-origin: 50% 50%; }
+  .tag-wrap .chip { transform: rotate(-6.6deg); }
 
   .card {
     left: -96px; top: 287px; width: 364px;
@@ -284,9 +290,8 @@
     .step__fill { width: calc(var(--p, 0) * (100% - 24px) / 3); }
     .step__body { width: auto; }
     .step.is-active .step__body { color: var(--text-tertiary); }
-    /* keep the arrival card and the tag on screen */
+    /* keep the arrival card on screen */
     .card { left: -8px; }
-    .tag-wrap { left: -8px; }
   }
 </style>
 </head>
@@ -307,12 +312,12 @@
           <li><button class="step" type="button" data-step="2">
             <span class="step__track" aria-hidden="true"></span><span class="step__fill" aria-hidden="true"></span>
             <span class="step__title">Arrive at the venue on time</span>
-            <span class="step__bodywrap"><span><span class="step__body" style="display:block">You may lose the offer if you arrive late</span></span></span>
+            <span class="step__bodywrap"><span><span class="step__body" style="display:block">The arrival window gives more flexibility</span></span></span>
           </button></li>
           <li><button class="step" type="button" data-step="3">
             <span class="step__track" aria-hidden="true"></span><span class="step__fill" aria-hidden="true"></span>
             <span class="step__title">Display your confirmation</span>
-            <span class="step__bodywrap"><span><span class="step__body" style="display:block">Show your claim confirmation screen to a staff member to get the 30% off offer</span></span></span>
+            <span class="step__bodywrap"><span><span class="step__body" style="display:block">Show your confirmation to get 30% off</span></span></span>
           </button></li>
         </ol>
       </div>
@@ -365,7 +370,7 @@
           </div>
 
           <div class="tag-wrap layer" data-el="tag">
-            <div class="chip chip--pink"><img src="assets/hand.svg" alt=""><span>Say hi!</span></div>
+            <div class="chip chip--orange"><img src="assets/eye.svg" alt=""><span>Show confirmation</span></div>
           </div>
         </div>
       </div>
