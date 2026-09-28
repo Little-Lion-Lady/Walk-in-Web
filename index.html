@@ -404,7 +404,7 @@ const TIMING = {
   countdownFrom: 299,     // step 2 card's "Offer activates in" timer, seconds (4:59)
   enterAt: 0.5,           // step 1 plays once the section top is above this fraction of the viewport
   pinPop:   { duration: 420, stagger: 80, fromScale: 0.6, damping: 0.8 }, // soft pop, barely any overshoot
-  pop:      { duration: 300, fromScale: 0.8, damping: 0.75, stagger: 120 }, // light spring; stagger = gap between the two step 3 tags
+  pop:      { duration: 300, fromScale: 0.8, damping: 0.75 }, // light spring
   fade:     { duration: 250 },                               // ease-out
   zoom:     { duration: 500 },                               // step 2 map zoom, ease-in-out
   lineDraw: { duration: 600 },                               // ease-in-out
@@ -418,6 +418,7 @@ const TIMING = {
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
   // in step 1's scroll progress (0–1), and pop back out when you scroll back past it
   pills:    { at: [0.1, 0.4, 0.7] },
+  tags:     { at: [0.2, 0.5] },   // same for step 3's "Say hi!" and "Show confirmation", in step 3's scroll progress
   scrubSmoothing: 0.16,   // 0–1: how quickly the progress bars and pills catch up with the scroll
 };
 
@@ -528,7 +529,7 @@ const TRANSITIONS = {
     // step 2 fades away in place while the map blurs and turns green
     [...['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
     [{ k: 'phone', p: 'rise' }],
-    [{ k: 'tagHi', p: 'pop' }, { k: 'tag', p: 'pop', delay: TIMING.pop.stagger }],
+    ['tagHi', 'tag'].map(k => ({ k, p: 'pop' })),
   ],
 };
 
@@ -550,14 +551,19 @@ function render(k) {
   const x = st.x || 0, y = st.y || 0, s = st.s ?? 1, r = st.r || 0;
   if ('x' in st || 'y' in st || 's' in st) el.style.transform = `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`;
 }
-// Resting state of layer k in state n. Pills in step 1 depend on how far into step 1 you've scrolled.
+// Resting state of layer k in state n. Some layers pop in with scroll: step 1's pills and
+// step 3's tags each appear once you've scrolled past their point in that step.
+const SCROLL_POPS = {
+  1: { keys: PILLS, at: () => TIMING.pills.at },
+  3: { keys: ['tagHi', 'tag'], at: () => TIMING.tags.at },
+};
+const isScrollPop = k => Object.values(SCROLL_POPS).some(g => g.keys.includes(k));
 let stepProgress = [0, 0, 0];
-let pillProgress = 0;   // step 1 progress the pills follow (the destination's, during a step jump)
-const pillVisible = i => pillProgress >= TIMING.pills.at[i];
+let popProgress = [0, 0, 0];   // step progress the scroll pops follow (the destination's, during a step jump)
 function getState(k, n) {
-  const i = PILLS.indexOf(k);
-  if (i < 0 || n !== 1) return S[k][n];
-  return pillVisible(i) ? { o: 1, s: 1 } : POP_OUT;
+  const g = SCROLL_POPS[n], i = g ? g.keys.indexOf(k) : -1;
+  if (i < 0) return S[k][n];
+  return popProgress[n - 1] >= g.at()[i] ? { o: 1, s: 1 } : POP_OUT;
 }
 function applyState(n) { for (const k in L) { Object.assign(L[k].st, getState(k, n)); render(k); } }
 
@@ -612,8 +618,8 @@ async function play(n, forward, g) {
     if (g !== gen) return;
     const maxDelay = Math.max(...items.map(i => i.delay || 0));
     await Promise.all(items.map(i =>
-      tween(i.k, pickProps(getState(i.k, dest), i), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward && !PILLS.includes(i.k) })));
-    PILLS.forEach((k, j) => { pillShown[j] = L[k].st.o > 0.5; });
+      tween(i.k, pickProps(getState(i.k, dest), i), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward && !isScrollPop(i.k) })));
+    for (const k in popShown) popShown[k] = L[k].st.o > 0.5;
   }
 }
 
@@ -762,16 +768,17 @@ function sizeSection() {
 const fills = stepBtns.map(b => b.querySelector('.step__fill'));
 const fillNow = [0, 0, 0];
 let scrubRaf = 0, scrubLast = 0;
-// pop each step 1 pill in or out as the scroll crosses its point
-const pillShown = [false, false, false];
-function syncPills() {
-  PILLS.forEach((k, i) => {
-    const want = pillVisible(i);
-    if (want === pillShown[i]) return;
-    pillShown[i] = want;
-    if (reduced) { Object.assign(L[k].st, getState(k, 1)); render(k); return; }
-    tween(k, getState(k, 1), PROFILES.pop());
-  });
+// pop each scroll-driven layer of step n in or out as the scroll crosses its point
+const popShown = {};
+Object.values(SCROLL_POPS).forEach(g => g.keys.forEach(k => { popShown[k] = false; }));
+function syncPops(n) {
+  for (const k of SCROLL_POPS[n]?.keys || []) {
+    const to = getState(k, n), want = to.o > 0.5;
+    if (want === popShown[k]) continue;
+    popShown[k] = want;
+    if (reduced) { Object.assign(L[k].st, to); render(k); continue; }
+    tween(k, to, PROFILES.pop());
+  }
 }
 function startScrub() {
   if (!scrubRaf) { scrubLast = performance.now(); scrubRaf = requestAnimationFrame(scrubTick); }
@@ -789,14 +796,14 @@ function scrubTick(now) {
     fillNow[i] = follow(fillNow[i], stepProgress[i]);
     f.style.setProperty('--p', fillNow[i].toFixed(4));
   });
-  // pills belong to the scroll only while the illustration is resting on step 1
-  if (settled === 1 && target === 1 && !running) syncPills();
+  // scroll pops belong to the scroll only while the illustration is resting on their step
+  if (settled === target && !running) syncPops(settled);
   scrubRaf = moving ? requestAnimationFrame(scrubTick) : 0;
 }
 function onScroll() {
   const top = section.getBoundingClientRect().top;
   stepProgress = stepProgress.map((_, i) => Math.min(1, Math.max(0, (-top - stepStart(i)) / (TIMING.stepHoldVh[i] * vh()))));
-  if (jumpTo === null) pillProgress = stepProgress[0];
+  if (jumpTo === null) popProgress = [...stepProgress];
   startScrub();
   if (top > vh() * TIMING.enterAt) return setTarget(0);
   let n = 1;
@@ -827,7 +834,7 @@ stepBtns.forEach((b, i) => b.addEventListener('click', () => {
     const wasRunning = running;
     gen++; cancelAll(); stopGlow(); running = false; timeScale = 1; heading = null;
     const g = gen;
-    pillProgress = 0;          // arriving at the start of a step, so step 1's pills are still hidden
+    popProgress = [0, 0, 0];   // arriving at the start of a step, so its scroll pops are still hidden
     target = n;
     updateCopy();
     // ignore the scroll positions the smooth scroll passes through; stop once it lands,
@@ -851,9 +858,9 @@ stepBtns.forEach((b, i) => b.addEventListener('click', () => {
 const wrap = document.getElementById('ill-wrap');
 function layout() {
   if (innerWidth < 900) {
-    // map spans the gutters; pills may run off the edge, as in the mobile design
+    // map fills the container width; pills may run off the edge, as in the mobile design
     const w = wrap.clientWidth;
-    const s = Math.min(1, w / 500, (vh() - 330) / 512);
+    const s = w / 500;
     wrap.style.height = `${512 * s}px`;
     wrap.style.width = '';
     stage.style.transform = `translate(${(w - 500 * s) / 2}px, ${30 * s}px) scale(${s})`;
