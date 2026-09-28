@@ -140,7 +140,6 @@
     left: 116px; top: 53px; width: 279px; height: 665px;
     border: 10px solid var(--phone-frame);
     border-radius: 24px;
-    transform-origin: 50% 180px;
   }
   .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 24px; }
 
@@ -384,6 +383,7 @@ const TIMING = {
   zoom:     { duration: 500 },                               // step 2 map zoom, ease-in-out
   lineDraw: { duration: 600 },                               // ease-in-out
   lift:     { duration: 300, distance: 24 },                 // step 3 move-up-and-fade, ease-out
+  phoneRise: { duration: 600, distance: 420 },               // step 3 phone slides up into the map from below its bottom edge, ease-out
   glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
   catchUp: 3,             // playback speed while the user scrolls past several steps at once
   crossfade: 300,         // reduced-motion state swap
@@ -410,6 +410,7 @@ const PROFILES = {
   zoom:     () => ({ duration: TIMING.zoom.duration, ease: easeInOut }),
   lineDraw: () => ({ duration: TIMING.lineDraw.duration, ease: easeInOut }),
   lift:     () => ({ duration: TIMING.lift.duration, ease: easeOut }),
+  rise:     () => ({ duration: TIMING.phoneRise.duration, ease: easeOut }),
 };
 
 /* ---------- pin groups (Figma "Group 1/2/3/5"; coords relative to each group) ---------- */
@@ -455,10 +456,11 @@ for (const p of PINS) {
 const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
 const LIFT = () => -TIMING.lift.distance;
 const PIN_FROM = TIMING.pinPop.fromScale;
+const RISE = TIMING.phoneRise.distance;
 const S = {
   map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -131, y: -149, s: ZOOM }, { x: -131, y: -149, s: ZOOM }],
   tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
-  phone:      [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
+  phone:      [{ y: RISE }, { y: RISE }, { y: RISE }, { y: 0 }], // hidden below the map's clipped bottom edge
   route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: LIFT(), d: 1 }],
   me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: -39.16, y: -32.99, s: ZOOM }, { o: 0, x: -39.16, y: -32.99 + LIFT(), s: ZOOM }],
   pin1:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
@@ -472,7 +474,7 @@ const S = {
   tag:        [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
 };
 // the pop-in start scale is tweakable
-for (const k of ['phone', 'card', 'tag']) S[k].forEach(st => { if (st.s !== 1) st.s = TIMING.pop.fromScale; });
+for (const k of ['card', 'tag']) S[k].forEach(st => { if (st.s !== 1) st.s = TIMING.pop.fromScale; });
 
 /* =====================================================================
    CHOREOGRAPHY — transition INTO step n, as stages that run one after another.
@@ -493,7 +495,7 @@ const TRANSITIONS = {
   3: [
     ['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'lift' })),
     [{ k: 'tint', p: 'fade' }],
-    [{ k: 'phone', p: 'pop' }],
+    [{ k: 'phone', p: 'rise' }],
     [{ k: 'tag', p: 'pop' }],
   ],
 };
