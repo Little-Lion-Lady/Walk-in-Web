@@ -109,7 +109,8 @@
   }
   .step.is-active .step__title { color: var(--teal-700); }
   .step.is-active .step__body { color: var(--text-primary); }
-  /* upcoming steps (not reached yet); finished steps stay quaternary */
+  .step.is-done :is(.step__title, .step__body) { color: var(--teal-600); }
+  /* upcoming steps (not reached yet) */
   .step:not(.is-active):not(.is-done) .step__title { color: var(--text-primary); }
   .step:not(.is-active):not(.is-done) .step__body { color: var(--text-tertiary); }
   .step__bodywrap { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 300ms ease-out; }
