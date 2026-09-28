@@ -360,7 +360,7 @@
               <div class="card__icon"><img src="assets/clock.svg" alt=""></div>
               <p class="card__time">Arrive between<br>12:30PM - 1:00PM</p>
             </div>
-            <div class="card__countdown"><span>Offer activates in</span><span>34:59</span></div>
+            <div class="card__countdown"><span>Offer activates in</span><span id="countdown">4:59</span></div>
           </div>
 
           <div class="chip chip--pink layer" data-el="chipPink" style="left:63px;top:-30px">
@@ -391,7 +391,8 @@
    TIMING — every tweakable number lives here (ms unless noted)
    ===================================================================== */
 const TIMING = {
-  stepHoldVh: 0.6,        // scroll distance each step holds, in viewport heights
+  stepHoldVh: [0.6, 0.9, 0.6],  // scroll distance each step holds, in viewport heights (step 1, 2, 3)
+  countdownFrom: 299,     // step 2 card's "Offer activates in" timer, seconds (4:59)
   enterAt: 0.5,           // step 1 plays once the section top is above this fraction of the viewport
   pinPop:   { duration: 420, stagger: 80, fromScale: 0.6, damping: 0.8 }, // soft pop, barely any overshoot
   pop:      { duration: 300, fromScale: 0.8, damping: 0.75, stagger: 120 }, // light spring; stagger = gap between the two step 3 tags
@@ -404,9 +405,9 @@ const TIMING = {
   catchUp: 3,             // playback speed while the user scrolls past several steps at once
   crossfade: 300,         // reduced-motion state swap, and the skip when tapping a step
   jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
-  // step 1 pills appear with scroll, one after another. Each fades over `length` of step 1's
-  // scroll progress (0–1), the next starting `stagger` later.
-  pills:    { start: 0.05, stagger: 0.28, length: 0.35, rise: 8, fadeDuration: 400 },
+  // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
+  // in step 1's scroll progress (0–1), and pop back out when you scroll back past it
+  pills:    { at: [0.1, 0.4, 0.7] },
   scrubSmoothing: 0.16,   // 0–1: how quickly the progress bars and pills catch up with the scroll
 };
 
@@ -423,7 +424,6 @@ const PROFILES = {
   pinPop:   () => ({ duration: TIMING.pinPop.duration, ease: spring(TIMING.pinPop.damping), opacityEase: easeOut }),
   pop:      () => ({ duration: TIMING.pop.duration, ease: spring(TIMING.pop.damping), opacityEase: easeOut }),
   fade:     () => ({ duration: TIMING.fade.duration, ease: easeOut }),
-  pillFade: () => ({ duration: TIMING.pills.fadeDuration, ease: easeInOut }),
   zoom:     () => ({ duration: TIMING.zoom.duration, ease: easeInOut }),
   lineDraw: () => ({ duration: TIMING.lineDraw.duration, ease: easeInOut }),
   fadeOut:  () => ({ duration: TIMING.toStep3.fadeOut, ease: easeOut }),
@@ -473,6 +473,7 @@ for (const p of PINS) {
    ===================================================================== */
 const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
 const PIN_FROM = TIMING.pinPop.fromScale;
+const POP_OUT = { o: 0, s: TIMING.pop.fromScale };
 const RISE = TIMING.phoneRise.distance;
 const S = {
   map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -131, y: -149, s: ZOOM }, { x: -131, y: -149, s: ZOOM }],
@@ -485,9 +486,9 @@ const S = {
   pin3:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 }],
   card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: 0 }],
-  chipPink:   [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
-  chipPurple: [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
-  chipOrange: [{ o: 0, y: 0 }, null, { o: 0, y: 0 }, { o: 0, y: 0 }], // step 1 comes from scroll
+  chipPink:   [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
+  chipPurple: [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
+  chipOrange: [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
   tagHi:      [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
   tag:        [{ o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 0, s: 0.8 }, { o: 1, s: 1 }],
 };
@@ -502,7 +503,7 @@ const PILLS = ['chipPink', 'chipPurple', 'chipOrange'];   // order they appear i
 const TRANSITIONS = {
   1: [
     ['pin1', 'pin2', 'pin3', 'pinKeep'].map((k, i) => ({ k, p: 'pinPop', delay: i * TIMING.pinPop.stagger })),
-    PILLS.map(k => ({ k, p: 'pillFade' })),
+    PILLS.map(k => ({ k, p: 'pop' })),
   ],
   2: [
     [...['pin1', 'pin2', 'pin3', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
@@ -539,16 +540,11 @@ function render(k) {
 // Resting state of layer k in state n. Pills in step 1 depend on how far into step 1 you've scrolled.
 let stepProgress = [0, 0, 0];
 let pillProgress = 0;   // step 1 progress the pills follow (the destination's, during a step jump)
-const smoothstep = t => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
-function pillOpacity(i) {
-  const { start, stagger, length } = TIMING.pills;
-  return smoothstep((pillProgress - start - i * stagger) / length);
-}
+const pillVisible = i => pillProgress >= TIMING.pills.at[i];
 function getState(k, n) {
   const i = PILLS.indexOf(k);
   if (i < 0 || n !== 1) return S[k][n];
-  const o = pillOpacity(i);
-  return { o, y: reduced ? 0 : (1 - o) * TIMING.pills.rise };
+  return pillVisible(i) ? { o: 1, s: 1 } : POP_OUT;
 }
 function applyState(n) { for (const k in L) { Object.assign(L[k].st, getState(k, n)); render(k); } }
 
@@ -597,7 +593,8 @@ async function play(n, forward, g) {
     if (g !== gen) return;
     const maxDelay = Math.max(...items.map(i => i.delay || 0));
     await Promise.all(items.map(i =>
-      tween(i.k, getState(i.k, dest), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward })));
+      tween(i.k, getState(i.k, dest), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward && !PILLS.includes(i.k) })));
+    PILLS.forEach((k, j) => { pillShown[j] = L[k].st.o > 0.5; });
   }
 }
 
@@ -634,6 +631,18 @@ function startGlow() {
   };
   glowRaf = requestAnimationFrame(loop);
 }
+// step 2 card counts down once step 2 has settled; it restarts at 4:59 whenever the card comes back
+const countdownEl = document.getElementById('countdown');
+let countdownTimer = 0, countdownLeft = TIMING.countdownFrom;
+const showCountdown = () => { countdownEl.textContent = `${Math.floor(countdownLeft / 60)}:${String(countdownLeft % 60).padStart(2, '0')}`; };
+function resetCountdown() { stopCountdown(); countdownLeft = TIMING.countdownFrom; showCountdown(); }
+function startCountdown() {
+  if (countdownTimer) return;
+  countdownTimer = setInterval(() => {
+    if (countdownLeft > 0) { countdownLeft--; showCountdown(); } else stopCountdown();
+  }, 1000);
+}
+function stopCountdown() { clearInterval(countdownTimer); countdownTimer = 0; }
 function stopGlow() {
   cancelAnimationFrame(glowRaf); glowRaf = 0;
   glowPath.setAttribute('opacity', 0);
@@ -664,6 +673,7 @@ async function run() {
     const dir = Math.sign(target - settled);
     timeScale = Math.abs(target - settled) > 1 ? TIMING.catchUp : 1;
     heading = settled + dir;
+    if (heading === 2) resetCountdown();
     await play(dir > 0 ? settled + 1 : settled, dir > 0, g);
     if (g !== gen) return;   // a step jump took over
     settled += dir;
@@ -671,7 +681,7 @@ async function run() {
   }
   running = false;
   timeScale = 1;
-  if (settled === 2) startGlow();
+  if (settled === 2) { startGlow(); startCountdown(); } else stopCountdown();
   startScrub();
 }
 
@@ -688,6 +698,7 @@ function crossfadeTo(n) {
   xfadeEl = snap;
   applyState(n);
   settled = n;
+  if (n === 2) { resetCountdown(); startCountdown(); } else stopCountdown();
   snap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: TIMING.crossfade, easing: 'ease-out', fill: 'forwards' })
     .finished.then(() => { snap.remove(); if (xfadeEl === snap) xfadeEl = null; });
 }
@@ -722,14 +733,27 @@ function updateCopy() {
 const section = document.getElementById('hiw');
 const STEPS = 3;
 const vh = () => window.innerHeight;
+// scroll distance (px) from the section top to where step i (0-based) starts
+const stepStart = i => TIMING.stepHoldVh.slice(0, i).reduce((a, b) => a + b, 0) * vh();
 function sizeSection() {
-  section.style.height = `${(1 + STEPS * TIMING.stepHoldVh) * 100}vh`;
+  section.style.height = `${(1 + TIMING.stepHoldVh.reduce((a, b) => a + b, 0)) * 100}vh`;
 }
 // Scroll-linked values (progress bars, step 1 pills) chase the scroll position with a
 // little smoothing, so wheel ticks don't show up as jumps.
 const fills = stepBtns.map(b => b.querySelector('.step__fill'));
 const fillNow = [0, 0, 0];
 let scrubRaf = 0, scrubLast = 0;
+// pop each step 1 pill in or out as the scroll crosses its point
+const pillShown = [false, false, false];
+function syncPills() {
+  PILLS.forEach((k, i) => {
+    const want = pillVisible(i);
+    if (want === pillShown[i]) return;
+    pillShown[i] = want;
+    if (reduced) { Object.assign(L[k].st, getState(k, 1)); render(k); return; }
+    tween(k, getState(k, 1), PROFILES.pop());
+  });
+}
 function startScrub() {
   if (!scrubRaf) { scrubLast = performance.now(); scrubRaf = requestAnimationFrame(scrubTick); }
 }
@@ -747,25 +771,18 @@ function scrubTick(now) {
     f.style.setProperty('--p', fillNow[i].toFixed(4));
   });
   // pills belong to the scroll only while the illustration is resting on step 1
-  if (settled === 1 && target === 1 && !running) {
-    for (const key of PILLS) {
-      const st = L[key].st, to = getState(key, 1);
-      st.o = follow(st.o, to.o);
-      st.y = follow(st.y, to.y);
-      render(key);
-    }
-  }
+  if (settled === 1 && target === 1 && !running) syncPills();
   scrubRaf = moving ? requestAnimationFrame(scrubTick) : 0;
 }
 function onScroll() {
   const top = section.getBoundingClientRect().top;
-  const hold0 = vh() * TIMING.stepHoldVh;
-  stepProgress = stepProgress.map((_, i) => Math.min(1, Math.max(0, (-top - i * hold0) / hold0)));
+  stepProgress = stepProgress.map((_, i) => Math.min(1, Math.max(0, (-top - stepStart(i)) / (TIMING.stepHoldVh[i] * vh()))));
   if (jumpTo === null) pillProgress = stepProgress[0];
   startScrub();
   if (top > vh() * TIMING.enterAt) return setTarget(0);
-  const hold = vh() * TIMING.stepHoldVh;
-  setTarget(Math.min(STEPS, Math.max(1, Math.floor(-top / hold) + 1)));
+  let n = 1;
+  while (n < STEPS && -top >= stepStart(n)) n++;
+  setTarget(n);
 }
 let scrollQueued = false;
 addEventListener('scroll', () => {
@@ -786,7 +803,7 @@ function endJump() {
 }
 stepBtns.forEach((b, i) => b.addEventListener('click', () => {
   const n = i + 1;
-  const y = section.getBoundingClientRect().top + scrollY + i * vh() * TIMING.stepHoldVh + 2;
+  const y = section.getBoundingClientRect().top + scrollY + stepStart(i) + 2;
   if (n !== target || running) {
     const wasRunning = running;
     gen++; cancelAll(); stopGlow(); running = false; timeScale = 1; heading = null;
