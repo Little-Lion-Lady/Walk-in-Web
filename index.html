@@ -386,7 +386,8 @@ const TIMING = {
   phoneRise: { duration: 270, distance: 420 },               // step 3 phone slides up into the map from below its bottom edge, ease-out
   glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
   catchUp: 3,             // playback speed while the user scrolls past several steps at once
-  crossfade: 300,         // reduced-motion state swap
+  crossfade: 300,         // reduced-motion state swap, and the skip when tapping a step
+  jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
   // step 1 pills appear with scroll, one after another. Each fades over `length` of step 1's
   // scroll progress (0–1), the next starting `stagger` later.
   pills:    { start: 0.05, stagger: 0.28, length: 0.35, rise: 8, fadeDuration: 400 },
@@ -631,7 +632,7 @@ let settled = 0, target = 0, running = false;
 
 let jumpTo = null;   // step we're smooth-scrolling to after a tap
 function setTarget(n) {
-  if (jumpTo !== null) { if (n === jumpTo) jumpTo = null; return; }
+  if (jumpTo !== null) return;   // mid step-jump: endJump() re-syncs when the scroll lands
   if (n === target) return;
   target = n;
   updateCopy();
@@ -756,29 +757,41 @@ addEventListener('scroll', () => {
   requestAnimationFrame(() => { scrollQueued = false; onScroll(); });
 }, { passive: true });
 
-// Tapping a step jumps straight to it: steps in between are skipped (a quick crossfade
-// to the state just before the chosen one), then only the chosen step's animation plays.
+// Tapping a step plays that step's own animation, whichever direction you're going:
+// the illustration crossfades to the state just before the chosen step, then the chosen
+// step animates in. Steps in between never play. Scrolling still plays everything in order.
+let jumpTimer = 0;
+function endJump() {
+  if (jumpTo === null) return;
+  jumpTo = null;
+  clearTimeout(jumpTimer);
+  onScroll();   // sync with wherever the scroll actually ended up
+}
 stepBtns.forEach((b, i) => b.addEventListener('click', () => {
   const n = i + 1;
   const y = section.getBoundingClientRect().top + scrollY + i * vh() * TIMING.stepHoldVh + 2;
   if (n !== target || running) {
-    // interrupted mid-transition back to where it came from: play that transition in reverse
-    if (running && heading !== null && n === settled) settled = heading;
+    const wasRunning = running;
     gen++; cancelAll(); stopGlow(); running = false; timeScale = 1; heading = null;
+    const g = gen;
     pillProgress = 0;          // arriving at the start of a step, so step 1's pills are still hidden
     target = n;
     updateCopy();
-    if (reduced) crossfadeTo(n);
-    else {
-      if (Math.abs(n - settled) > 1) crossfadeTo(n - Math.sign(n - settled));
-      run();
-    }
+    // ignore the scroll positions the smooth scroll passes through; stop once it lands,
+    // or once the user interrupts it (the browser then ends the smooth scroll)
     jumpTo = n;
+    clearTimeout(jumpTimer);
+    jumpTimer = setTimeout(endJump, TIMING.jumpTimeout);
+    addEventListener('scrollend', endJump, { once: true });
+    if (reduced) crossfadeTo(n);
+    else if (settled === n - 1 && !wasRunning) run();   // already where this step starts
+    else {
+      crossfadeTo(n - 1);
+      setTimeout(() => { if (g === gen) run(); }, TIMING.crossfade);
+    }
   }
   scrollTo({ top: y, behavior: reduced ? 'auto' : 'smooth' });
 }));
-// the user taking over the scroll ends a jump
-for (const type of ['wheel', 'touchstart', 'keydown']) addEventListener(type, () => { jumpTo = null; }, { passive: true });
 
 // Illustration scales to fit. Its content overflows the 500×460 map
 // (card −96px left, pills −30px top / +539px right / +482px bottom).
