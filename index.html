@@ -138,11 +138,11 @@
     overflow: hidden;
     isolation: isolate;
   }
-  .map__img { position: absolute; left: -174px; top: -268px; width: 972px; height: 884px; transform-origin: 0 0; }
+  .map__img { position: absolute; left: -174px; top: -289px; width: 972px; height: 884px; transform-origin: 0 0; }
   /* step 3: the map goes soft and green. A blurred copy of the map with teal-50 multiplied over it.
      (filter, not backdrop-filter: the fading opacity would stop a backdrop blur from working) */
   .tint { position: absolute; inset: 0; }
-  .tint img { position: absolute; left: -305px; top: -417px; width: 1189px; height: 1081px; filter: blur(5px); }
+  .tint img { position: absolute; left: -263px; top: -408px; width: 1189px; height: 1081px; filter: blur(5px); }
   .tint::after { content: ""; position: absolute; inset: 0; background: var(--teal-50); mix-blend-mode: multiply; }
   .phone {
     left: 116px; top: 53px; width: 279px; height: 665px;
@@ -153,10 +153,10 @@
   }
   .phone img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 32px 32px 24px 24px; }
 
-  .route { left: 203.5px; top: 152px; overflow: visible; }
+  .route { left: 247px; top: 160px; overflow: visible; }
 
   .me {
-    left: 232px; top: 194px; width: 88.23px; height: 89.682px;
+    left: 222.85px; top: 173.38px; width: 88.23px; height: 89.682px;
     display: flex; align-items: center; justify-content: center;
     transform-origin: 50% 50%;
   }
@@ -224,12 +224,12 @@
   .tag-wrap--show .chip { transform: rotate(-6.6deg); }
 
   .card {
-    left: -96px; top: 287px; width: 364px;
+    left: -89px; top: 281px; width: 364px;
     padding: 20px;
-    border-radius: 20px;
+    border-radius: 24px;
     border: 1px solid var(--border-alpha);
     background: var(--teal-700);
-    filter: var(--shadow-xs);
+    filter: drop-shadow(0 2px 5px rgba(47, 55, 66, 0.04)) drop-shadow(0 1px 2px rgba(47, 55, 66, 0.02));
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -244,7 +244,7 @@
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--alpha-30);
   }
   .card__countdown span:first-child { flex: 1; font: 600 20px/26px var(--font-body); }
@@ -366,7 +366,7 @@
           <div class="chip chip--pink layer" data-el="chipPink" style="left:63px;top:-30px">
             <img src="assets/clock.svg" alt=""><span>Available right now</span>
           </div>
-          <div class="chip chip--purple layer" data-el="chipPurple" style="left:406px;top:233px">
+          <div class="chip chip--purple layer" data-el="chipPurple" style="left:381px;top:233px">
             <img src="assets/marker-pin.svg" alt=""><span>Nearby</span>
           </div>
           <div class="chip chip--orange layer" data-el="chipOrange" style="left:155px;top:426px">
@@ -436,14 +436,13 @@ const PINS = [
   { key: 'pin1', left: 18, top: 230, origin: [78, 148], tooltip: [16, 96], photos: [
     { x: 0, y: 0, w: 121.418, h: 130.618, t: 'rotate(-13.18deg)', cw: 98.701, ch: 111.039, src: 'pin1-a.jpg' },
     { x: 43.24, y: 15.96, w: 104.297, h: 113.207, t: 'rotate(10.99deg)', cw: 87.138, ch: 98.401, src: 'pin1-b.jpg' } ] },
-  { key: 'pin2', left: 96, top: 42, origin: [69.6, 145], tooltip: [7.6, 93], photos: [
+  { key: 'pin2', left: 85, top: 45, origin: [69.6, 145], tooltip: [7.6, 93], photos: [
     { x: 0, y: 0, w: 107.952, h: 124.419, t: 'rotate(-8.16deg) skewX(-1.09deg)', cw: 95.154, ch: 111.767, src: 'pin2-a.jpg' },
     { x: 34.78, y: 15.45, w: 104.402, h: 106.597, t: 'rotate(11.99deg) skewX(2.07deg)', cw: 91.053, ch: 89.006, src: 'pin2-b.jpg' } ] },
-  { key: 'pin3', left: 348, top: 309, origin: [68, 134.35], tooltip: [6, 82.35], photos: [
+  { key: 'pin3', left: 341, top: 308, origin: [68, 134.35], tooltip: [6, 82.35], photos: [
     { x: 0, y: 3.27, w: 108.829, h: 112.602, t: 'rotate(166.51deg) scaleY(-1)', cw: 89.272, ch: 94.377, src: 'pin3-a.jpg' },
     { x: 22.38, y: 0, w: 103.955, h: 114.326, t: 'rotate(-171.09deg) scaleY(-1)', cw: 89.272, ch: 101.721, src: 'pin3-b.jpg' } ] },
-  // top-right pin — the one that stays for steps 2 and 3
-  { key: 'pinKeep', left: 311, top: 74, origin: [62, 133.38], tooltip: [0, 81.38], photos: [
+  { key: 'pinKeep', left: 313, top: 57, origin: [62, 133.38], tooltip: [0, 81.38], photos: [
     { x: 31.09, y: 1.93, w: 108.695, h: 112.464, t: 'rotate(13.49deg)', cw: 89.162, ch: 94.261, src: 'pin3-a.jpg' },
     { x: 1.84, y: 0, w: 97.405, h: 108.954, t: 'rotate(-4.35deg)', cw: 89.89, ch: 102.426, src: 'pin3-b.jpg' } ] },
 ];
@@ -476,15 +475,15 @@ const PIN_FROM = TIMING.pinPop.fromScale;
 const POP_OUT = { o: 0, s: TIMING.pop.fromScale };
 const RISE = TIMING.phoneRise.distance;
 const S = {
-  map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -131, y: -149, s: ZOOM }, { x: -131, y: -149, s: ZOOM }],
+  map:        [{ x: 0, y: 0, s: 1 }, { x: 0, y: 0, s: 1 }, { x: -89, y: -119, s: ZOOM }, { x: -89, y: -119, s: ZOOM }],
   tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
   phone:      [{ y: RISE }, { y: RISE }, { y: RISE }, { y: 0 }], // hidden below the map's clipped bottom edge
   route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: 0, d: 1 }],
-  me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: -39.16, y: -32.99, s: ZOOM }, { o: 0, x: -39.16, y: -32.99, s: ZOOM }],
+  me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 4.99, y: -1.37, s: ZOOM }, { o: 0, x: 4.99, y: -1.37, s: ZOOM }],
   pin1:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin2:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin3:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: -10, y: -39 }, { o: 0, s: 1, x: -10, y: -39 }],
+  pinKeep:    [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: 0 }],
   chipPink:   [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
   chipPurple: [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
@@ -506,14 +505,14 @@ const TRANSITIONS = {
     PILLS.map(k => ({ k, p: 'pop' })),
   ],
   2: [
-    [...['pin1', 'pin2', 'pin3', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
-     ...['map', 'me', 'pinKeep'].map(k => ({ k, p: 'zoom' }))],
+    [...['pin1', 'pin2', 'pin3', 'pinKeep', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
+     ...['map', 'me'].map(k => ({ k, p: 'zoom' }))],
     [{ k: 'route', p: 'lineDraw' }],
     [{ k: 'card', p: 'pop' }],
   ],
   3: [
     // step 2 fades away in place while the map blurs and turns green
-    [...['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
+    [...['me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
     [{ k: 'phone', p: 'rise' }],
     [{ k: 'tagHi', p: 'pop' }, { k: 'tag', p: 'pop', delay: TIMING.pop.stagger }],
   ],
