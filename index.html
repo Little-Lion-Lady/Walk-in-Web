@@ -94,7 +94,7 @@
     border-radius: 3px;
   }
   .step__track { bottom: 0; background: var(--grey-track); }
-  .step__fill { height: 0; background: var(--teal-600); } /* height is scrubbed by scroll, see updateFills() */
+  .step__fill { height: calc(var(--p, 0) * 100%); background: var(--teal-600); } /* --p (0–1) is scrubbed by scroll, see scrubTick() */
   .step__title {
     font: 600 20px/26px var(--font-body);
     color: var(--text-quaternary);
@@ -252,15 +252,38 @@
       gap: 24px;
       padding: 24px 0;
     }
-    .hiw__copy { flex: none; gap: 20px; }
-    .hiw__title { font-size: 28px; line-height: 34px; }
-    .steps { gap: 12px; }
-    .step { max-width: none; }
-    .step__title { font-size: 18px; line-height: 24px; }
-    .step__body { width: auto; font-size: 15px; line-height: 24px; min-height: 48px; } /* same height for every step, so the illustration doesn't jump */
-    /* only the active step shows its description, so everything fits one screen */
-    .step:not(.is-active) .step__bodywrap { grid-template-rows: 0fr; }
-    .ill-wrap { width: 100%; }
+    /* order: title, illustration, progress bars, active step's copy */
+    .hiw__copy { display: contents; }
+    .hiw__title { order: 0; font-size: 28px; line-height: 34px; }
+    .ill-wrap { order: 1; width: 100%; }
+    .steps {
+      order: 2;
+      position: relative;
+      display: grid;
+      padding-top: 23px; /* 3px bars + 20px gap */
+      gap: 0;
+    }
+    /* all three steps share one grid cell, so the copy swaps without the layout jumping */
+    .steps > li { grid-area: 1 / 1; }
+    .steps > li :is(.step__title, .step__bodywrap) { transition: opacity 250ms ease-out, color 250ms ease-out; }
+    .step:not(.is-active) { pointer-events: none; }
+    .step:not(.is-active) :is(.step__title, .step__bodywrap) { opacity: 0; }
+    .step { position: static; padding-left: 0; max-width: none; }
+    /* bars sit side by side across the top, filling left to right */
+    .step__track, .step__fill {
+      top: 0;
+      height: 3px;
+      width: calc((100% - 24px) / 3);
+    }
+    .steps > li:nth-child(1) :is(.step__track, .step__fill) { left: 0; }
+    .steps > li:nth-child(2) :is(.step__track, .step__fill) { left: calc((100% - 24px) / 3 + 12px); }
+    .steps > li:nth-child(3) :is(.step__track, .step__fill) { left: calc((100% - 24px) / 3 * 2 + 24px); }
+    .step__fill { width: calc(var(--p, 0) * (100% - 24px) / 3); }
+    .step__body { width: auto; }
+    .step.is-active .step__body { color: var(--text-tertiary); }
+    /* keep the arrival card and the tag on screen */
+    .card { left: -8px; }
+    .tag-wrap { left: -8px; }
   }
 </style>
 </head>
@@ -689,7 +712,7 @@ function scrubTick(now) {
   };
   fills.forEach((f, i) => {
     fillNow[i] = follow(fillNow[i], stepProgress[i]);
-    f.style.height = `${fillNow[i] * 100}%`;
+    f.style.setProperty('--p', fillNow[i].toFixed(4));
   });
   // pills belong to the scroll only while the illustration is resting on step 1
   if (settled === 1 && target === 1 && !running) {
@@ -728,11 +751,12 @@ stepBtns.forEach((b, i) => b.addEventListener('click', () => {
 const wrap = document.getElementById('ill-wrap');
 function layout() {
   if (innerWidth < 900) {
+    // map spans the gutters; pills may run off the edge, as in the mobile design
     const w = wrap.clientWidth;
-    const s = Math.min(1, w / 635, (vh() * 0.46) / 512);
+    const s = Math.min(1, w / 500, (vh() - 330) / 512);
     wrap.style.height = `${512 * s}px`;
     wrap.style.width = '';
-    stage.style.transform = `translate(${w / 2 - 221.5 * s}px, ${30 * s}px) scale(${s})`;
+    stage.style.transform = `translate(${(w - 500 * s) / 2}px, ${30 * s}px) scale(${s})`;
   } else {
     const s = Math.min(1, (vh() - 96) / 512);
     wrap.style.width = `${500 * s}px`;
