@@ -133,19 +133,28 @@
     position: absolute;
     inset: 0;
     border-radius: 32px;
-    border: 1px solid var(--border-alpha);
     background: var(--map-bg);
     overflow: hidden;
     isolation: isolate;
   }
-  .map__img { position: absolute; left: -174px; top: -289px; width: 972px; height: 884px; transform-origin: 0 0; }
+  /* 1px inner shadow, no blur, in place of a border; drawn on top so the map image can't cover it */
+  .map::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--border-alpha);
+    pointer-events: none;
+  }
+  .map__img { position: absolute; left: -173px; top: -288px; width: 972px; height: 884px; transform-origin: 0 0; }
   /* step 3: the map goes soft and green. A blurred copy of the map with teal-50 multiplied over it.
      (filter, not backdrop-filter: the fading opacity would stop a backdrop blur from working) */
   .tint { position: absolute; inset: 0; }
-  .tint img { position: absolute; left: -263px; top: -408px; width: 1189px; height: 1081px; filter: blur(5px); }
+  .tint img { position: absolute; left: -262px; top: -407px; width: 1189px; height: 1081px; filter: blur(5px); }
   .tint::after { content: ""; position: absolute; inset: 0; background: var(--teal-50); mix-blend-mode: multiply; }
   .phone {
-    left: 116px; top: 53px; width: 279px; height: 665px;
+    left: 117px; top: 54px; width: 279px; height: 665px;
     border: 10px solid var(--phone-frame);
     border-radius: 32px 32px 24px 24px;
     background: var(--phone-frame); /* the screen's 32px corners sit under the bezel, as in Figma */
@@ -158,7 +167,7 @@
   .me {
     left: 222.85px; top: 173.38px; width: 88.23px; height: 89.682px;
     display: flex; align-items: center; justify-content: center;
-    transform-origin: 50% 50%;
+    transform-origin: 26.89px 55.89px; /* the dot, so zooming and turning keep it in place */
   }
   .me__rot { position: relative; width: 68.274px; height: 58.186px; transform: rotate(-50.84deg); flex: none; }
   .me__rot img { position: absolute; top: 0; bottom: 0; right: 0; left: -7.77%; width: 107.77%; height: 100%; display: block; }
@@ -399,6 +408,7 @@ const TIMING = {
   fade:     { duration: 250 },                               // ease-out
   zoom:     { duration: 500 },                               // step 2 map zoom, ease-in-out
   lineDraw: { duration: 600 },                               // ease-in-out
+  turn:     { duration: 500 },                               // user's dot turns to face the route while it draws, ease-in-out
   toStep3:  { fadeOut: 300, blur: 450 },                     // step 2 layers fade out (ease-out) while the map blurs and turns green (ease-in-out)
   phoneRise: { duration: 270, distance: 420 },               // step 3 phone slides up into the map from below its bottom edge, ease-out
   glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
@@ -426,6 +436,7 @@ const PROFILES = {
   fade:     () => ({ duration: TIMING.fade.duration, ease: easeOut }),
   zoom:     () => ({ duration: TIMING.zoom.duration, ease: easeInOut }),
   lineDraw: () => ({ duration: TIMING.lineDraw.duration, ease: easeInOut }),
+  turn:     () => ({ duration: TIMING.turn.duration, ease: easeInOut }),
   fadeOut:  () => ({ duration: TIMING.toStep3.fadeOut, ease: easeOut }),
   blur:     () => ({ duration: TIMING.toStep3.blur, ease: easeInOut }),
   rise:     () => ({ duration: TIMING.phoneRise.duration, ease: easeOut }),
@@ -442,6 +453,7 @@ const PINS = [
   { key: 'pin3', left: 341, top: 308, origin: [68, 134.35], tooltip: [6, 82.35], photos: [
     { x: 0, y: 3.27, w: 108.829, h: 112.602, t: 'rotate(166.51deg) scaleY(-1)', cw: 89.272, ch: 94.377, src: 'pin3-a.jpg' },
     { x: 22.38, y: 0, w: 103.955, h: 114.326, t: 'rotate(-171.09deg) scaleY(-1)', cw: 89.272, ch: 101.721, src: 'pin3-b.jpg' } ] },
+  // top-right pin — stays for step 2, at the end of the route
   { key: 'pinKeep', left: 313, top: 57, origin: [62, 133.38], tooltip: [0, 81.38], photos: [
     { x: 31.09, y: 1.93, w: 108.695, h: 112.464, t: 'rotate(13.49deg)', cw: 89.162, ch: 94.261, src: 'pin3-a.jpg' },
     { x: 1.84, y: 0, w: 97.405, h: 108.954, t: 'rotate(-4.35deg)', cw: 89.89, ch: 102.426, src: 'pin3-b.jpg' } ] },
@@ -472,6 +484,7 @@ for (const p of PINS) {
    ===================================================================== */
 const ZOOM = 1189 / 972;             // step 2 map is the step 1 map scaled up
 const PIN_FROM = TIMING.pinPop.fromScale;
+const TURN = 43.8;   // degrees: the cone turns from facing up-right to facing along the route's first leg
 const POP_OUT = { o: 0, s: TIMING.pop.fromScale };
 const RISE = TIMING.phoneRise.distance;
 const S = {
@@ -479,11 +492,11 @@ const S = {
   tint:       [{ o: 0 }, { o: 0 }, { o: 0 }, { o: 1 }],
   phone:      [{ y: RISE }, { y: RISE }, { y: RISE }, { y: 0 }], // hidden below the map's clipped bottom edge
   route:      [{ o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 0 }, { o: 1, y: 0, d: 1 }, { o: 0, y: 0, d: 1 }],
-  me:         [{ o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 0, y: 0, s: 1 }, { o: 1, x: 4.99, y: -1.37, s: ZOOM }, { o: 0, x: 4.99, y: -1.37, s: ZOOM }],
+  me:         [{ o: 1, x: 0, y: 0, s: 1, r: 0 }, { o: 1, x: 0, y: 0, s: 1, r: 0 }, { o: 1, x: 1.14, y: 1.1, s: ZOOM, r: TURN }, { o: 0, x: 1.14, y: 1.1, s: ZOOM, r: TURN }],
   pin1:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin2:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
   pin3:       [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
-  pinKeep:    [{ o: 0, s: PIN_FROM }, { o: 1, s: 1 }, { o: 0, s: 1 }, { o: 0, s: 1 }],
+  pinKeep:    [{ o: 0, s: PIN_FROM, x: 0, y: 0 }, { o: 1, s: 1, x: 0, y: 0 }, { o: 1, s: 1, x: 31.5, y: -14.38 }, { o: 0, s: 1, x: 31.5, y: -14.38 }],
   card:       [{ o: 0, s: 0.8, y: 0 }, { o: 0, s: 0.8, y: 0 }, { o: 1, s: 1, y: 0 }, { o: 0, s: 1, y: 0 }],
   chipPink:   [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
   chipPurple: [POP_OUT, null, POP_OUT, POP_OUT], // step 1 comes from scroll
@@ -505,14 +518,15 @@ const TRANSITIONS = {
     PILLS.map(k => ({ k, p: 'pop' })),
   ],
   2: [
-    [...['pin1', 'pin2', 'pin3', 'pinKeep', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
-     ...['map', 'me'].map(k => ({ k, p: 'zoom' }))],
-    [{ k: 'route', p: 'lineDraw' }],
+    [...['pin1', 'pin2', 'pin3', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
+     { k: 'map', p: 'zoom' }, { k: 'me', p: 'zoom', except: ['r'] }, { k: 'pinKeep', p: 'zoom' }],
+    // the route draws while the dot turns to face along it
+    [{ k: 'route', p: 'lineDraw' }, { k: 'me', p: 'turn', only: ['r'] }],
     [{ k: 'card', p: 'pop' }],
   ],
   3: [
     // step 2 fades away in place while the map blurs and turns green
-    [...['me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
+    [...['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
     [{ k: 'phone', p: 'rise' }],
     [{ k: 'tagHi', p: 'pop' }, { k: 'tag', p: 'pop', delay: TIMING.pop.stagger }],
   ],
@@ -533,8 +547,8 @@ function render(k) {
   const { el, st } = L[k];
   if ('o' in st) el.style.opacity = st.o;
   if (k === 'route') { routePath.style.strokeDashoffset = 1 - st.d; }
-  const x = st.x || 0, y = st.y || 0, s = st.s ?? 1;
-  if ('x' in st || 'y' in st || 's' in st) el.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+  const x = st.x || 0, y = st.y || 0, s = st.s ?? 1, r = st.r || 0;
+  if ('x' in st || 'y' in st || 's' in st) el.style.transform = `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`;
 }
 // Resting state of layer k in state n. Pills in step 1 depend on how far into step 1 you've scrolled.
 let stepProgress = [0, 0, 0];
@@ -582,6 +596,12 @@ function tween(k, to, { duration, ease, opacityEase }, { delay = 0, reverse = fa
 }
 
 // play the transition into step n (forward: n-1 → n) or out of it (reverse: n → n-1)
+// an item can animate only some of a layer's properties (`only`) or all but some (`except`)
+function pickProps(st, { only, except }) {
+  const out = {};
+  for (const p in st) if ((!only || only.includes(p)) && !(except || []).includes(p)) out[p] = st[p];
+  return out;
+}
 function cancelAll() { for (const tw of [...tweens]) tw.cancel(); }
 let gen = 0;   // bumped to abandon whatever sequence is playing
 let heading = null;   // state the in-flight transition is heading to
@@ -592,7 +612,7 @@ async function play(n, forward, g) {
     if (g !== gen) return;
     const maxDelay = Math.max(...items.map(i => i.delay || 0));
     await Promise.all(items.map(i =>
-      tween(i.k, getState(i.k, dest), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward && !PILLS.includes(i.k) })));
+      tween(i.k, pickProps(getState(i.k, dest), i), PROFILES[i.p](), { delay: forward ? i.delay || 0 : maxDelay - (i.delay || 0), reverse: !forward && !PILLS.includes(i.k) })));
     PILLS.forEach((k, j) => { pillShown[j] = L[k].st.o > 0.5; });
   }
 }
