@@ -400,7 +400,7 @@
    TIMING — every tweakable number lives here (ms unless noted)
    ===================================================================== */
 const TIMING = {
-  stepHoldVh: [0.6, 0.9, 0.6],  // scroll distance each step holds, in viewport heights (step 1, 2, 3)
+  stepHoldVh: [0.9, 0.9, 0.9],  // scroll distance each step holds, in viewport heights (step 1, 2, 3)
   countdownFrom: 299,     // step 2 card's "Offer activates in" timer, seconds (4:59)
   enterAt: 0.5,           // step 1 plays once the section top is above this fraction of the viewport
   pinPop:   { duration: 420, stagger: 80, fromScale: 0.6, damping: 0.8 }, // soft pop, barely any overshoot
@@ -417,8 +417,8 @@ const TIMING = {
   jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
   // in step 1's scroll progress (0–1), and pop back out when you scroll back past it
-  pills:    { at: [0.1, 0.4, 0.7] },
-  tags:     { at: [0.2, 0.5] },   // same for step 3's "Say hi!" and "Show confirmation", in step 3's scroll progress
+  pills:    { at: [0.07, 0.27, 0.47] },
+  tags:     { at: [0.13, 0.33] },   // same for step 3's "Say hi!" and "Show confirmation", in step 3's scroll progress
   scrubSmoothing: 0.16,   // 0–1: how quickly the progress bars and pills catch up with the scroll
 };
 
