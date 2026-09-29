@@ -418,7 +418,8 @@ const TIMING = {
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
   // in step 1's scroll progress (0–1), and pop back out when you scroll back past it
   pills:    { at: [0.07, 0.27, 0.47] },
-  tags:     { stagger: 200 },   // step 3: "Say hi!" pops once the phone has settled, "Show confirmation" this many ms later
+  tags:     { at: [0.13, 0.33] },   // same for step 3's "Say hi!" and "Show confirmation", in step 3's scroll progress
+  popStagger: 200,        // when several scroll pops are due at once (fast scroll), they queue this many ms apart
   scrubSmoothing: 0.16,   // 0–1: how quickly the progress bars and pills catch up with the scroll
 };
 
@@ -517,7 +518,7 @@ const PILLS = ['chipPink', 'chipPurple', 'chipOrange'];   // order they appear i
 const TRANSITIONS = {
   1: [
     ['pin1', 'pin2', 'pin3', 'pinKeep'].map((k, i) => ({ k, p: 'pinPop', delay: i * TIMING.pinPop.stagger })),
-    PILLS.map(k => ({ k, p: 'pop' })),
+    PILLS.map((k, i) => ({ k, p: 'pop', delay: i * TIMING.popStagger })),
   ],
   2: [
     [...['pin1', 'pin2', 'pin3', 'chipPink', 'chipPurple', 'chipOrange'].map(k => ({ k, p: 'fade' })),
@@ -530,7 +531,7 @@ const TRANSITIONS = {
     // step 2 fades away in place while the map blurs and turns green
     [...['pinKeep', 'me', 'route', 'card'].map(k => ({ k, p: 'fadeOut' })), { k: 'tint', p: 'blur' }],
     [{ k: 'phone', p: 'rise' }],
-    [{ k: 'tagHi', p: 'pop' }, { k: 'tag', p: 'pop', delay: TIMING.tags.stagger }],
+    ['tagHi', 'tag'].map((k, i) => ({ k, p: 'pop', delay: i * TIMING.popStagger })),
   ],
 };
 
@@ -552,10 +553,11 @@ function render(k) {
   const x = st.x || 0, y = st.y || 0, s = st.s ?? 1, r = st.r || 0;
   if ('x' in st || 'y' in st || 's' in st) el.style.transform = `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`;
 }
-// Resting state of layer k in state n. Step 1's pills pop in with scroll: each appears once
-// you've scrolled past its point in step 1.
+// Resting state of layer k in state n. Some layers pop in with scroll: step 1's pills and
+// step 3's tags each appear once you've scrolled past their point in that step.
 const SCROLL_POPS = {
   1: { keys: PILLS, at: () => TIMING.pills.at },
+  3: { keys: ['tagHi', 'tag'], at: () => TIMING.tags.at },
 };
 const isScrollPop = k => Object.values(SCROLL_POPS).some(g => g.keys.includes(k));
 let stepProgress = [0, 0, 0];
@@ -772,12 +774,14 @@ let scrubRaf = 0, scrubLast = 0;
 const popShown = {};
 Object.values(SCROLL_POPS).forEach(g => g.keys.forEach(k => { popShown[k] = false; }));
 function syncPops(n) {
+  let delay = 0;   // several due at once: pop them in one after the other
   for (const k of SCROLL_POPS[n]?.keys || []) {
     const to = getState(k, n), want = to.o > 0.5;
     if (want === popShown[k]) continue;
     popShown[k] = want;
     if (reduced) { Object.assign(L[k].st, to); render(k); continue; }
-    tween(k, to, PROFILES.pop());
+    tween(k, to, PROFILES.pop(), { delay: want ? delay : 0 });
+    if (want) delay += TIMING.popStagger;
   }
 }
 function startScrub() {
