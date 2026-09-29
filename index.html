@@ -410,7 +410,9 @@ const TIMING = {
   lineDraw: { duration: 600 },                               // ease-in-out
   turn:     { duration: 500 },                               // user's dot turns to face the route while it draws, ease-in-out
   toStep3:  { fadeOut: 300, blur: 450 },                     // step 2 layers fade out (ease-out) while the map blurs and turns green (ease-in-out)
-  phoneRise: { duration: 270, distance: 420 },               // step 3 phone slides up into the map from below its bottom edge, ease-out
+  // step 3 phone slides up from below the map's bottom edge, following the scroll: fully up after
+  // `span` of step 3's scroll progress (0–1). `duration` is only the catch-up when step 3 starts.
+  phoneRise: { span: 0.2, distance: 420, duration: 270 },
   glow:     { duration: 1400, pause: 250, tail: 7 },         // travelling gradient loop on the route
   catchUp: 3,             // playback speed while the user scrolls past several steps at once
   crossfade: 300,         // reduced-motion state swap, and the skip when tapping a step
@@ -418,7 +420,7 @@ const TIMING = {
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
   // in step 1's scroll progress (0–1), and pop back out when you scroll back past it
   pills:    { at: [0.07, 0.27, 0.47] },
-  tags:     { at: [0.13, 0.33] },   // same for step 3's "Say hi!" and "Show confirmation", in step 3's scroll progress
+  tags:     { at: [0.26, 0.4] },  // after the phone is up   // same for step 3's "Say hi!" and "Show confirmation", in step 3's scroll progress
   popStagger: 200,        // when several scroll pops are due at once (fast scroll), they queue this many ms apart
   scrubSmoothing: 0.16,   // 0–1: how quickly the progress bars and pills catch up with the scroll
 };
@@ -562,7 +564,9 @@ const SCROLL_POPS = {
 const isScrollPop = k => Object.values(SCROLL_POPS).some(g => g.keys.includes(k));
 let stepProgress = [0, 0, 0];
 let popProgress = [0, 0, 0];   // step progress the scroll pops follow (the destination's, during a step jump)
+const phoneY = () => RISE * (1 - easeOut(Math.min(1, popProgress[2] / TIMING.phoneRise.span)));
 function getState(k, n) {
+  if (k === 'phone' && n === 3) return { y: phoneY() };
   const g = SCROLL_POPS[n], i = g ? g.keys.indexOf(k) : -1;
   if (i < 0) return S[k][n];
   return popProgress[n - 1] >= g.at()[i] ? { o: 1, s: 1 } : POP_OUT;
@@ -801,7 +805,10 @@ function scrubTick(now) {
     f.style.setProperty('--p', fillNow[i].toFixed(4));
   });
   // scroll pops belong to the scroll only while the illustration is resting on their step
-  if (settled === target && !running) syncPops(settled);
+  if (settled === target && !running) {
+    syncPops(settled);
+    if (settled === 3) { L.phone.st.y = follow(L.phone.st.y, phoneY()); render('phone'); }   // phone tracks the scroll
+  }
   scrubRaf = moving ? requestAnimationFrame(scrubTick) : 0;
 }
 function onScroll() {
@@ -833,12 +840,13 @@ function endJump() {
 }
 stepBtns.forEach((b, i) => b.addEventListener('click', () => {
   const n = i + 1;
-  const y = section.getBoundingClientRect().top + scrollY + stepStart(i) + 2;
+  const land = n === 3 ? TIMING.phoneRise.span : 0;   // step 3: land with the phone already up
+  const y = section.getBoundingClientRect().top + scrollY + stepStart(i) + land * TIMING.stepHoldVh[i] * vh() + 2;
   if (n !== target || running) {
     const wasRunning = running;
     gen++; cancelAll(); stopGlow(); running = false; timeScale = 1; heading = null;
     const g = gen;
-    popProgress = [0, 0, 0];   // arriving at the start of a step, so its scroll pops are still hidden
+    popProgress = [0, 0, land];   // where we'll land: scroll pops still hidden, step 3's phone up
     target = n;
     updateCopy();
     // ignore the scroll positions the smooth scroll passes through; stop once it lands,
