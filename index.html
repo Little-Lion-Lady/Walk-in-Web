@@ -411,10 +411,10 @@
     position: absolute; left: 0; top: calc(97px * var(--hs, 1)); width: calc(100% / var(--hs, 1));
     transform: scale(var(--hs, 1)); transform-origin: 0 0; overflow: hidden; padding: 4px 0 12px;
   }
-  .rcards__track { display: flex; gap: 20px; width: max-content; animation: rcards-scroll var(--rcards-dur, 60s) linear infinite; }
+  .rcards__track { display: flex; width: max-content; animation: rcards-scroll var(--rcards-dur, 60s) linear infinite; }
   @keyframes rcards-scroll { from { transform: translateX(-50%); } to { transform: translateX(0); } }
   .rcard {
-    flex: none; width: 272px;
+    flex: none; width: 272px; margin-right: 20px;
     background: #fff; border: 1px solid var(--border-subtle); border-radius: 20px;
     filter: drop-shadow(0 2px 5px rgba(47, 55, 66, 0.04)) drop-shadow(0 1px 2px rgba(47, 55, 66, 0.02));
   }
@@ -463,10 +463,11 @@
     mask: url("assets/page/ticker-mask.svg") center / 100% 100% no-repeat;
   }
   .ticker__track {
-    display: flex; gap: 12px; width: max-content; padding: 8px 0;
+    display: flex; width: max-content; padding: 8px 0;
     font: 600 16px/22px var(--font-body); color: #fff; white-space: nowrap;
     animation: ticker-scroll var(--ticker-dur, 40s) linear infinite;
   }
+  .ticker__track > * { margin-right: 12px; }
   @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
   /* ---------- image strips, rows drift in opposite directions with scroll ---------- */
@@ -1438,23 +1439,39 @@ window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, r
 
   /* ---------- save (heart) buttons ---------- */
   const HEART = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.99429 4.27985C8.32817 2.332 5.54979 1.80804 3.46225 3.59168C1.3747 5.37532 1.08081 8.35748 2.72016 10.467C4.08318 12.2209 8.20814 15.9201 9.56008 17.1174C9.71134 17.2513 9.78696 17.3183 9.87518 17.3446C9.95217 17.3676 10.0364 17.3676 10.1134 17.3446C10.2016 17.3183 10.2772 17.2513 10.4285 17.1174C11.7804 15.9201 15.9054 12.2209 17.2684 10.467C18.9078 8.35748 18.6498 5.35656 16.5263 3.59168C14.4029 1.8268 11.6604 2.332 9.99429 4.27985Z" stroke="#414651" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  document.querySelectorAll('.rcard__like').forEach(b => { b.innerHTML = HEART; });
+  function initHearts(root) { root.querySelectorAll('.rcard__like:empty').forEach(b => { b.innerHTML = HEART; }); }
+  initHearts(document);
   document.addEventListener('click', e => {
     const b = e.target.closest('.rcard__like');
     if (b) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
   });
 
-  /* ---------- marquees: clone content until it's wide enough, then loop at a fixed speed ---------- */
+  /* ---------- infinite marquees ----------
+     The track is two identical halves and animates by exactly one half, so the loop point is invisible.
+     Each half repeats the original items until it's at least as wide as the visible strip; rebuilt on resize. */
   function marquee(track, speed, cssVar) {
-    const originals = [...track.children];
-    let guard = 0;
-    while (track.scrollWidth < innerWidth * 1.2 && guard++ < 10) originals.forEach(n => track.appendChild(n.cloneNode(true)));
-    const half = [...track.children];
-    half.forEach(n => { const c = n.cloneNode(true); c.setAttribute('aria-hidden', 'true'); c.querySelectorAll('button,a').forEach(x => x.tabIndex = -1); track.appendChild(c); });
-    track.style.setProperty(cssVar, `${(track.scrollWidth / 2) / speed}s`);
+    const originals = [...track.children].map(n => n.cloneNode(true));
+    const build = () => {
+      const visible = track.parentElement.clientWidth;
+      track.replaceChildren(...originals.map(n => n.cloneNode(true)));
+      let guard = 0;
+      while (track.scrollWidth < visible + 300 && guard++ < 20) originals.forEach(n => track.appendChild(n.cloneNode(true)));
+      [...track.children].forEach(n => {
+        const c = n.cloneNode(true);
+        c.setAttribute('aria-hidden', 'true');
+        c.querySelectorAll('button, a').forEach(x => { x.tabIndex = -1; });
+        track.appendChild(c);
+      });
+      track.style.setProperty(cssVar, `${track.scrollWidth / 2 / speed}s`);
+      initHearts(track);
+    };
+    build();
+    let last = track.parentElement.clientWidth;
+    addEventListener('resize', () => {
+      const w = track.parentElement.clientWidth;
+      if (Math.abs(w - last) > 40) { last = w; build(); }
+    });
   }
-  marquee(document.getElementById('rcards-track'), P.cardsSpeed, '--rcards-dur');
-  marquee(document.getElementById('ticker-track'), P.tickerSpeed, '--ticker-dur');
 
   /* ---------- hero: phone + cards scale down when the hero is short (min 600px tall) ---------- */
   const hero = document.querySelector('.hero');
@@ -1468,6 +1485,9 @@ window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, r
   addEventListener('resize', fitHero);
   document.fonts?.ready.then(fitHero);
   fitHero();
+
+  marquee(document.getElementById('rcards-track'), P.cardsSpeed, '--rcards-dur');
+  marquee(document.getElementById('ticker-track'), P.tickerSpeed, '--ticker-dur');
 
   /* ---------- image strips: rows drift in opposite directions as you scroll ---------- */
   const strips = document.querySelector('.strips');
