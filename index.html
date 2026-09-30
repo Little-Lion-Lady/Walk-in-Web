@@ -407,15 +407,12 @@
   /* restaurant cards, auto-scrolling left → right (Figma dev note) */
   .rcards { position: absolute; left: 0; right: 0; top: 97px; overflow: hidden; padding: 4px 0 12px; }
   .rcards__track { display: flex; gap: 20px; width: max-content; animation: rcards-scroll var(--rcards-dur, 60s) linear infinite; }
-  .rcards:hover .rcards__track { animation-play-state: paused; }
   @keyframes rcards-scroll { from { transform: translateX(-50%); } to { transform: translateX(0); } }
   .rcard {
     flex: none; width: 272px;
     background: #fff; border: 1px solid var(--border-subtle); border-radius: 20px;
     filter: drop-shadow(0 2px 5px rgba(47, 55, 66, 0.04)) drop-shadow(0 1px 2px rgba(47, 55, 66, 0.02));
-    transition: transform 200ms var(--ease-out-soft);
   }
-  .rcard:hover { transform: translateY(-4px); }
   .rcard__img { position: relative; height: 164px; border-radius: 20px 20px 16px 16px; overflow: hidden; }
   .rcard__img > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .rcard__tags { position: absolute; left: 0; right: 0; top: 0; display: flex; gap: 4px; padding: 8px 8px 0; align-items: flex-start; }
@@ -449,11 +446,9 @@
   .btn-time, .btn-more {
     all: unset; box-sizing: border-box; cursor: pointer; text-align: center;
     padding: 8px 14px; border-radius: 12px; font: 600 14px/20px var(--font-body);
-    transition: filter 150ms ease-out;
   }
   .btn-time { flex: 1; background: var(--teal-700); color: #fff; }
   .btn-more { background: var(--teal-200); color: var(--teal-950); }
-  .btn-time:hover, .btn-more:hover { filter: brightness(1.08); }
 
   /* ticker, scrolling right → left (Figma dev note) */
   .ticker { height: 38px; background: var(--teal-600); overflow: hidden; position: relative; z-index: 3; }
