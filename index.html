@@ -16,6 +16,7 @@
     --teal-300: #7bdbc6;
     --teal-600: #108570;
     --teal-700: #126d61;
+    --teal-800: #0c5048;
     --route: #24a38a;
     --pink-600: #b44295;
     --purple-600: #8759b5;
@@ -107,12 +108,11 @@
     max-width: 100%;
     transition: color 250ms ease-out;
   }
-  .step.is-active .step__title { color: var(--teal-700); }
-  .step.is-active .step__body { color: var(--text-primary); }
-  .step.is-done :is(.step__title, .step__body) { color: var(--teal-600); }
-  /* upcoming steps (not reached yet) */
-  .step:not(.is-active):not(.is-done) .step__title { color: var(--text-primary); }
-  .step:not(.is-active):not(.is-done) .step__body { color: var(--text-tertiary); }
+  /* upcoming steps keep the quaternary default above */
+  .step.is-active .step__title { color: var(--teal-800); }
+  .step.is-active .step__body { color: var(--text-tertiary); }
+  .step.is-done .step__title { color: var(--teal-600); }
+  .step.is-done .step__body { color: var(--teal-700); }
   .step__bodywrap { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 300ms ease-out; }
   .step__bodywrap > * { overflow: hidden; }
 
@@ -297,7 +297,6 @@
     .steps > li:nth-child(3) :is(.step__track, .step__fill) { left: calc((100% - 24px) / 3 * 2 + 24px); }
     .step__fill { width: calc(var(--p, 0) * (100% - 24px) / 3); }
     .step__body { width: auto; }
-    .step.is-active .step__body { color: var(--text-tertiary); }
     /* keep the arrival card and the "Say hi!" tag on screen */
     .card { left: -8px; }
     .tag-wrap--hi { left: -8px; }
