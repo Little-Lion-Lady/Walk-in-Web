@@ -386,15 +386,15 @@
   }
   .hero__intro {
     /* on tall screens the spare height is shared above and below the intro */
-    width: min(800px, calc(100% - 32px)); margin: auto auto 0; padding-bottom: 40px; /* = TIMING.page.heroMinGap */
+    width: min(1010px, calc(100% - 32px)); margin: auto auto 0; padding-bottom: 40px; /* = TIMING.page.heroMinGap */
     display: flex; flex-direction: column; align-items: center; gap: 32px;
     text-align: center;
   }
   .hero__titles { display: flex; flex-direction: column; gap: 20px; }
   .hero__eyebrow { margin: 0; font: 600 20px/26px var(--font-body); color: var(--teal-600); }
-  .hero__title { margin: 0; font: 400 36px/42px var(--font-display); letter-spacing: -0.36px; color: var(--text-primary); }
+  .hero__title { margin: 0; font: 400 48px/56px var(--font-display); letter-spacing: -0.48px; color: var(--text-primary); }
   .hero__title em { font-style: normal; color: var(--teal-700); }
-  .hero__sub { margin: 12px 0 0; font: 400 20px/32px var(--font-body); color: var(--text-secondary); }
+  .hero__sub { margin: 12px 0 0; font: 400 24px/38px var(--font-body); color: var(--text-secondary); }
   .store-badges { display: flex; gap: 12px; }
   .store-badges a { display: block; border-radius: 8px; transition: transform 150ms ease-out; }
   .store-badges a:hover { transform: translateY(-2px); }
@@ -587,7 +587,7 @@
     .site-header__right { margin-left: 0; }
     .site-avatar { width: 52px; }
     .hero { margin-top: 0; height: max(600px, calc(100svh - 72px)); }
-    .hero__title { font-size: 28px; line-height: 34px; }
+    .hero__title { font-size: 28px; line-height: 34px; letter-spacing: -0.28px; }
     .hero__eyebrow { font-size: 18px; line-height: 24px; }
     .hero__sub { font-size: 17px; line-height: 26px; }
     .strips__row img { width: 280px; height: 173px; border-radius: 16px; }
