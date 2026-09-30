@@ -396,6 +396,7 @@
   .hero__title em { font-style: normal; color: var(--teal-700); }
   .hero__sub { margin: 12px 0 0; font: 400 24px/38px var(--font-body); color: var(--text-secondary); }
   .store-badges { display: flex; gap: 12px; }
+  .hero__btns { display: flex; gap: 12px; }
   .store-badges a { display: block; border-radius: 8px; transition: transform 150ms ease-out; }
   .store-badges a:hover { transform: translateY(-2px); }
   .store-badges img { display: block; height: 44px; }
@@ -590,6 +591,7 @@
     .hero__title { font-size: 28px; line-height: 34px; letter-spacing: -0.28px; }
     .hero__eyebrow { font-size: 18px; line-height: 24px; }
     .hero__sub { font-size: 17px; line-height: 26px; }
+    .hero__btns { flex-direction: column; width: 100%; max-width: 320px; }
     .strips__row img { width: 280px; height: 173px; border-radius: 16px; }
     .strips__row { gap: 12px; }
     .faq { flex-direction: column; gap: 24px; margin-top: 64px; }
@@ -653,10 +655,14 @@
       <a href="#" aria-label="Get it on Google Play"><img src="assets/page/badge-google-play.svg" alt="" width="148.5" height="44"></a>
       <a href="#" aria-label="Download on the App Store"><img src="assets/page/badge-app-store.svg" alt="" width="132" height="44"></a>
     </div>
+    <div class="hero__btns reveal" style="--i:4">
+      <a class="social-btn" href="#"><img src="assets/page/icon-google.svg" alt="">Get on Google Play</a>
+      <a class="social-btn" href="#"><img src="assets/page/icon-apple.svg" alt="">Get in App Store</a>
+    </div>
   </div>
 
   <div class="hero__stage">
-    <div class="rcards reveal" style="--i:4" aria-label="Offers near you">
+    <div class="rcards reveal" style="--i:5" aria-label="Offers near you">
       <div class="rcards__track" id="rcards-track">
         <!-- one set; script clones it so the loop is seamless -->
         <article class="rcard" data-set>
