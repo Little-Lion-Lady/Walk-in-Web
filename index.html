@@ -509,7 +509,11 @@
 
   /* ---------- get app ---------- */
   .getapp { position: relative; height: 383px; margin-top: 177px; }
-  .getapp__shape { position: absolute; left: -4.28%; top: -7.31%; width: 108.56%; height: 127.14%; pointer-events: none; }
+  .getapp__shape {
+    position: absolute; left: -4.28%; top: -7.31%; width: 108.56%; height: 127.14%; pointer-events: none;
+    /* stronger shadow on top of the one baked into the shape */
+    filter: drop-shadow(0 24px 40px rgba(12, 80, 72, 0.18)) drop-shadow(0 6px 12px rgba(12, 80, 72, 0.12));
+  }
   .getapp__voucher, .getapp__vdivider { display: none; }
   .getapp__copy {
     position: absolute; left: 71px; top: 50%; transform: translateY(calc(-50% + 0.62px));
@@ -614,7 +618,7 @@
     /* get app: voucher with side cut-outs at the dashed divider (Figma 8903:429733); no QR on a phone */
     .getapp {
       width: calc(100% - 32px); height: auto; margin-top: 96px; padding: 32px 20px 28px; text-align: center;
-      filter: drop-shadow(0 1px 1px rgba(47, 55, 66, 0.03)) drop-shadow(0 2px 3px rgba(47, 55, 66, 0.02)) drop-shadow(0 6px 8px rgba(47, 55, 66, 0.06));
+      filter: drop-shadow(0 16px 28px rgba(12, 80, 72, 0.2)) drop-shadow(0 4px 8px rgba(12, 80, 72, 0.12));
     }
     .getapp__shape, .getapp__divider, .qr { display: none; }
     .getapp__voucher {
