@@ -422,7 +422,7 @@
   .rcards__lead { will-change: transform; }
   .rcards__lead.is-entering {
     transform: translateX(0);
-    transition: transform var(--lead-dur, 1100ms) var(--lead-ease, cubic-bezier(.3, .55, .35, 1));   /* gentler launch, short tail into cruise */
+    transition: transform var(--lead-dur, 1500ms) var(--lead-ease, cubic-bezier(.45, .45, .15, 1));   /* quick launch, long soft ease-out into cruise */
   }
   @keyframes rcards-scroll { from { transform: translateX(-50%); } to { transform: translateX(0); } }
   .rcard {
@@ -986,7 +986,7 @@ const TIMING = {
     heroMinScale: 0.75,
     // hero phone rise: a physical spring (same parameters as Framer Motion's spring transition)
     phoneSpring: { stiffness: 100, damping: 20, mass: 1 },   // damping 20 = critically damped: no overshoot
-    cardsEntrance: { delay: 150, duration: 1100 },   // hero cards sweep in from the left, then settle into cardsSpeed   // damping 16.5 → ~1% overshoot    // hero phone + cards never scale below this; on short screens the hero grows instead
+    cardsEntrance: { delay: 150, duration: 1500 },   // hero cards sweep in from the left, then settle into cardsSpeed   // damping 16.5 → ~1% overshoot    // hero phone + cards never scale below this; on short screens the hero grows instead
   },
   jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
