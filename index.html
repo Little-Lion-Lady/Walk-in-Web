@@ -17,6 +17,7 @@
     --teal-300: #7bdbc6;
     --teal-600: #108570;
     --teal-700: #126d61;
+    --teal-800: #0c5048;
     --route: #24a38a;
     --pink-600: #b44295;
     --purple-600: #8759b5;
@@ -505,6 +506,7 @@
   /* ---------- get app ---------- */
   .getapp { position: relative; height: 383px; margin-top: 177px; }
   .getapp__shape { position: absolute; left: -4.28%; top: -7.31%; width: 108.56%; height: 127.14%; pointer-events: none; }
+  .getapp__voucher, .getapp__vdivider { display: none; }
   .getapp__copy {
     position: absolute; left: 71px; top: 50%; transform: translateY(calc(-50% + 0.62px));
     display: flex; flex-direction: column; gap: 20px; width: 498.5px;
@@ -598,13 +600,28 @@
     .faq__title { font-size: 28px; line-height: 34px; }
     .faq__sub { font-size: 17px; line-height: 26px; }
     .faq__list { max-width: none; width: 100%; }
-    /* get app: plain rounded card, no QR (you're already on a phone) */
-    .getapp { height: auto; margin-top: 96px; border-radius: 24px; background: linear-gradient(160deg, #126d61, #0c5048); padding: 32px 24px; }
+    /* get app: voucher with side cut-outs at the dashed divider (Figma 8903:429733); no QR on a phone */
+    .getapp {
+      width: calc(100% - 32px); height: auto; margin-top: 96px; padding: 32px 36px 16px; text-align: center;
+      filter: drop-shadow(0 1px 1px rgba(47, 55, 66, 0.03)) drop-shadow(0 2px 3px rgba(47, 55, 66, 0.02)) drop-shadow(0 6px 8px rgba(47, 55, 66, 0.06));
+    }
     .getapp__shape, .getapp__divider, .qr { display: none; }
-    .getapp__copy { position: static; transform: none; width: auto; }
-    .getapp__title { font-size: 26px; line-height: 32px; }
-    .getapp__sub { font-size: 17px; line-height: 26px; white-space: normal; }
-    .getapp__btns { flex-direction: column; }
+    .getapp__voucher {
+      display: block; position: absolute; inset: 0; border-radius: 20px;
+      background: linear-gradient(135deg, var(--teal-700), var(--teal-800));
+      /* two 13px notches, centred on the divider line (--notch-y is set from the divider's position) */
+      -webkit-mask: radial-gradient(circle 13px at 0 var(--notch-y, 182px), #0000 98%, #000 100%), radial-gradient(circle 13px at 100% var(--notch-y, 182px), #0000 98%, #000 100%);
+      -webkit-mask-composite: source-in;
+      mask: radial-gradient(circle 13px at 0 var(--notch-y, 182px), #0000 98%, #000 100%), radial-gradient(circle 13px at 100% var(--notch-y, 182px), #0000 98%, #000 100%);
+      mask-composite: intersect;
+    }
+    .getapp__copy { position: relative; left: auto; top: auto; transform: none; width: auto; align-items: center; }
+    .getapp__top { gap: 12px; padding-top: 0; align-items: center; }
+    .getapp__vdivider { display: block; width: calc(100% + 32px); margin: 0 -16px; height: 1.5px; }
+    .getapp__vdivider img { display: block; width: 100%; height: 1.5px; }
+    .getapp__title { font-size: 20px; line-height: 28px; }
+    .getapp__sub { margin-top: 2px; font-size: 14px; line-height: 22px; white-space: normal; }
+    .getapp__btns { flex-direction: column; width: 100%; }
     .social-btn { width: 100%; }
     .footer { margin-top: 120px; padding: 96px 0 72px; }
     .footer__inner { padding-right: 0; }
@@ -850,6 +867,7 @@
 
 <section class="getapp wrap" aria-labelledby="getapp-title">
   <img class="getapp__shape" src="assets/page/app-shape.svg" alt="">
+  <div class="getapp__voucher" aria-hidden="true"></div>
   <div class="getapp__copy">
     <div class="getapp__top">
       <div class="getapp__rating">
@@ -864,6 +882,7 @@
         <p class="getapp__sub">Get the First Table app and see where you can dine now</p>
       </div>
     </div>
+    <div class="getapp__vdivider" aria-hidden="true"><img src="assets/page/voucher-divider.svg" alt=""></div>
     <div class="getapp__btns">
       <a class="social-btn" href="#"><img src="assets/page/icon-google-play.svg" alt="">Get on Google Play</a>
       <a class="social-btn" href="#"><img src="assets/page/icon-apple.svg" alt="">Get in App Store</a>
@@ -889,9 +908,9 @@
   <div class="footer__doodle" aria-hidden="true"><img src="assets/page/footer-doodle.svg" alt=""></div>
   <div class="footer__inner">
     <div class="footer__cols">
-      <div class="footer__col reveal" style="--i:0"><h2>Diners</h2><p>Join more than 3,500,000 diners<br>who already ❤️ First Table.</p><a class="footer__btn" href="#">Learn more</a></div>
-      <div class="footer__col reveal" style="--i:1"><h2>Restaurateurs</h2><p>Join more than 4,300 restaurants<br>who already ❤️ First Table.</p><a class="footer__btn" href="#">Learn more</a></div>
-      <div class="footer__col reveal" style="--i:2"><h2>Follow us</h2><p>Share the love by following and<br>tagging us on social media.</p>
+      <div class="footer__col"><h2>Diners</h2><p>Join more than 3,500,000 diners<br>who already ❤️ First Table.</p><a class="footer__btn" href="#">Learn more</a></div>
+      <div class="footer__col"><h2>Restaurateurs</h2><p>Join more than 4,300 restaurants<br>who already ❤️ First Table.</p><a class="footer__btn" href="#">Learn more</a></div>
+      <div class="footer__col"><h2>Follow us</h2><p>Share the love by following and<br>tagging us on social media.</p>
         <div class="footer__social"><a href="#" aria-label="First Table on Facebook"><img src="assets/page/facebook.svg" alt=""></a><a href="#" aria-label="First Table on Instagram"><img src="assets/page/instagram.svg" alt=""></a></div></div>
     </div>
     <nav class="footer__links" aria-label="Footer">
@@ -1492,6 +1511,15 @@ window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, r
 
   marquee(document.getElementById('rcards-track'), P.cardsSpeed, '--rcards-dur');
   marquee(document.getElementById('ticker-track'), P.tickerSpeed, '--ticker-dur');
+
+  /* ---------- get app voucher (mobile): notches follow the dashed divider ---------- */
+  const getapp = document.querySelector('.getapp'), vdiv = getapp.querySelector('.getapp__vdivider');
+  function placeNotch() {
+    if (vdiv.offsetParent) getapp.style.setProperty('--notch-y', `${vdiv.getBoundingClientRect().top - getapp.getBoundingClientRect().top + 0.75}px`);
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(placeNotch).observe(getapp);
+  addEventListener('resize', placeNotch);
+  placeNotch();
 
   /* ---------- image strips: rows drift in opposite directions as you scroll ---------- */
   const strips = document.querySelector('.strips');
