@@ -45,7 +45,7 @@
 
   /* ---------- how it works ---------- */
   .hiw { position: relative; /* height set from JS: 1 + steps × hold */ }
-  .hiw { --pin-h: min(100vh, 640px); }   /* height of the pinned area (desktop) */
+  .hiw { --pin-h: min(100vh, 640px); margin-bottom: 80px; }   /* height of the pinned area (desktop); space before the image strips */
   .hiw__pin {
     position: sticky;
     top: calc((100vh - var(--pin-h)) / 2);   /* pinned in the middle of the screen */
@@ -325,7 +325,7 @@
   .js-motion .reveal.is-in {
     opacity: 1; translate: 0 0;
     transition: opacity var(--reveal-dur, 600ms) var(--ease-out-soft), translate var(--reveal-dur, 600ms) var(--ease-out-soft);
-    transition-delay: calc(var(--i, 0) * var(--reveal-stagger, 80ms));
+    transition-delay: var(--delay, calc(var(--i, 0) * var(--reveal-stagger, 80ms)));
   }
 
   /* ---------- header ---------- */
@@ -668,20 +668,20 @@
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero__intro">
     <div class="hero__titles">
-      <p class="hero__eyebrow reveal" style="--i:0">Introducing Dine now</p>
+      <p class="hero__eyebrow reveal">Introducing Dine now</p>
       <div>
-        <h1 class="hero__title reveal" id="hero-title" style="--i:1">Get <em>30% off food</em>, when you want to eat now</h1>
-        <p class="hero__sub reveal" style="--i:2">Find same-day offers at restaurants near you in the First Table app</p>
+        <h1 class="hero__title reveal" id="hero-title">Get <em>30% off food</em>, when you want to eat now</h1>
+        <p class="hero__sub reveal">Find same-day offers at restaurants near you in the First Table app</p>
       </div>
     </div>
-    <div class="hero__btns reveal" style="--i:3">
+    <div class="hero__btns reveal">
       <a class="social-btn social-btn--dark" href="#"><img src="assets/page/icon-google-play-dark.svg" alt="">Get on Google Play</a>
       <a class="social-btn social-btn--dark" href="#"><img src="assets/page/icon-apple-white.svg" alt="">Get in App Store</a>
     </div>
   </div>
 
   <div class="hero__stage">
-    <div class="rcards reveal" style="--i:4" aria-label="Offers near you">
+    <div class="rcards reveal" style="--delay: 720ms" aria-label="Offers near you">
       <div class="rcards__track" id="rcards-track">
         <!-- one set; script clones it so the loop is seamless -->
         <article class="rcard" data-set>
@@ -730,7 +730,7 @@
         </article>
       </div>
     </div>
-    <div class="hero__phone reveal" style="--i:3; --reveal-dur: 800ms; --reveal-y: 48px"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
+    <div class="hero__phone reveal" style="--delay: 600ms; --reveal-dur: 800ms; --reveal-y: 48px"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
   </div>
 
   <div class="ticker" aria-label="No booking needed, just walk in. No fee for a limited time.">
