@@ -390,6 +390,8 @@
   /* the phone never fades (cards behind it would show through); it rises from behind the ticker */
   .js-motion .hero__phone.reveal { opacity: 1; }
   .hero .reveal { --reveal-dur: 1500ms; --reveal-y: 0px; --reveal-ease: cubic-bezier(.33, 1, .68, 1); }
+  /* hero copy (Melius-style): fades in on a long expo ease-out */
+  .hero__intro .reveal { --reveal-ease: cubic-bezier(.16, 1, .3, 1); }
   .hero__intro {
     /* on tall screens the spare height is shared above and below the intro */
     width: min(1010px, calc(100% - 32px)); margin: auto auto 0; padding-bottom: 40px; /* = TIMING.page.heroMinGap */
@@ -517,16 +519,32 @@
   .faq__item.is-open .faq__a p { opacity: 1; transition-delay: 80ms; }
 
   /* ---------- get app ---------- */
-  .getapp { position: relative; height: 383px; margin-top: 177px; }
-  .getapp__shape {
-    position: absolute; left: -4.28%; top: -7.31%; width: 108.56%; height: 127.14%; pointer-events: none;
-    /* stronger shadow on top of the one baked into the shape */
-    filter: drop-shadow(0 24px 40px rgba(12, 80, 72, 0.18)) drop-shadow(0 6px 12px rgba(12, 80, 72, 0.12));
+  /* desktop: copy | dashed divider | QR, with the two cut-outs on the divider. Paddings shrink
+     with the card (values are Figma's at the 1216px card) and the cut-outs follow the QR column. */
+  .getapp {
+    position: relative; min-height: 383px; margin-top: 177px;
+    display: flex; align-items: center; container-type: inline-size;
+    --pad-l: clamp(32px, 5.84cqw, 71px);       /* 71px in Figma */
+    --qr-pl: clamp(32px, 5.07cqw, 61.6px);     /* divider → QR card */
+    --qr-pr: clamp(24px, 3.24cqw, 39.4px);     /* QR card → card edge */
+    --notch-x: calc(100% - var(--qr-pr) - 264px - var(--qr-pl));
+    filter: drop-shadow(0 24px 40px rgba(12, 80, 72, 0.18)) drop-shadow(0 6px 12px rgba(12, 80, 72, 0.12)) drop-shadow(0 24px 32px rgba(47, 55, 66, 0.06));
   }
-  .getapp__voucher, .getapp__vdivider { display: none; }
+  .getapp__voucher {
+    position: absolute; inset: 0; border-radius: 32px;
+    background: linear-gradient(346.4deg, var(--teal-800) 23.7%, var(--teal-700) 79.9%);
+    box-shadow: inset 0 0 0 1px var(--border-alpha);
+    /* two cut-outs (53.5px wide, 23px deep), centred on the divider */
+    -webkit-mask: radial-gradient(circle 27px at var(--notch-x) -4px, #0000 98%, #000 100%), radial-gradient(circle 27px at var(--notch-x) calc(100% + 4px), #0000 98%, #000 100%);
+    -webkit-mask-composite: source-in;
+    mask: radial-gradient(circle 27px at var(--notch-x) -4px, #0000 98%, #000 100%), radial-gradient(circle 27px at var(--notch-x) calc(100% + 4px), #0000 98%, #000 100%);
+    mask-composite: intersect;
+  }
+  .getapp__vdivider { display: none; }
   .getapp__copy {
-    position: absolute; left: 71px; top: 50%; transform: translateY(calc(-50% + 0.62px));
-    display: flex; flex-direction: column; gap: 20px; width: 498.5px;
+    position: relative; flex: 1; min-width: 0;   /* ends at the divider */
+    padding: 40px 24px 40px var(--pad-l); margin-top: 1.24px;
+    display: flex; flex-direction: column; gap: 20px;
   }
   .getapp__top { display: flex; flex-direction: column; gap: 24px; }
   .getapp__rating { display: flex; align-items: center; gap: 12px; }
@@ -539,8 +557,9 @@
   .getapp__stars img { width: 16px; height: 16px; }
   .getapp__score { display: flex; gap: 6px; margin-top: 2px; font: 500 14px/20px var(--font-body); color: #fff; }
   .getapp__title { margin: 0; font: 400 32px/38px var(--font-display); color: #fff; }
-  .getapp__sub { margin: 8px 0 0; font: 400 20px/32px var(--font-body); color: rgba(255, 255, 255, 0.8); white-space: nowrap; }
+  .getapp__sub { margin: 8px 0 0; font: 400 20px/32px var(--font-body); color: rgba(255, 255, 255, 0.8); text-wrap: pretty; }
   .getapp__btns { display: flex; gap: 12px; }
+  .getapp__btns .social-btn { flex: 0 1 206px; min-width: 0; }
   .social-btn {
     width: 206px; min-height: 48px; padding: 12px; border-radius: 16px; background: #fff;
     display: flex; gap: 12px; align-items: center; justify-content: center;
@@ -551,10 +570,13 @@
   .social-btn img { width: 24px; height: 24px; }
   .social-btn--dark { background: var(--text-primary); color: #fff; }
   .social-btn--dark:hover { background: var(--text-secondary); }
-  .getapp__divider { position: absolute; left: 70%; top: 16px; width: 3px; height: 354.4px; }
-  .getapp__divider img { position: absolute; left: 0; top: 0; width: 354.4px; height: 3px; transform-origin: 0 0; transform: rotate(90deg) translateY(-3px); }
+  /* dashed line (Figma: 3px, 2px dash + round caps, 8px gap, white 20%) that stretches with the card */
+  .getapp__divider {
+    position: absolute; left: calc(var(--notch-x) - 1.5px); top: 16px; bottom: 12.6px; width: 3px;
+    background: repeating-linear-gradient(rgba(255, 255, 255, 0.2) 0 5px, transparent 5px 10px);
+  }
   .qr {
-    position: absolute; left: calc(70% + (30% - 262px) / 2 + 10px); top: 48.12px;
+    position: relative; flex: none; margin: 0 var(--qr-pr) 0 var(--qr-pl); transform: translateY(2.5px);
     display: flex; flex-direction: column; align-items: center; gap: 20px;
     padding: 32px 32px 20px; border-radius: 24px; background: #fff; border: 1px solid var(--border-alpha);
     filter: drop-shadow(0 2px 5px rgba(47, 55, 66, 0.04)) drop-shadow(0 1px 2px rgba(47, 55, 66, 0.02));
@@ -626,12 +648,13 @@
     .faq__list { max-width: none; width: 100%; }
     /* get app: voucher with side cut-outs at the dashed divider (Figma 8903:429733); no QR on a phone */
     .getapp {
+      display: block; min-height: 0;
       width: calc(100% - 32px); height: auto; margin-top: 96px; padding: 32px 20px 28px; text-align: center;
       filter: drop-shadow(0 16px 28px rgba(12, 80, 72, 0.2)) drop-shadow(0 4px 8px rgba(12, 80, 72, 0.12));
     }
-    .getapp__shape, .getapp__divider, .qr { display: none; }
+    .getapp__divider, .qr { display: none; }
     .getapp__voucher {
-      display: block; position: absolute; inset: 0; border-radius: 20px;
+      border-radius: 20px; box-shadow: none;
       background: linear-gradient(135deg, var(--teal-700), var(--teal-800));
       /* two 13px notches, centred on the divider line (--notch-y is set from the divider's position) */
       -webkit-mask: radial-gradient(circle 13px at 0 var(--notch-y, 182px), #0000 98%, #000 100%), radial-gradient(circle 13px at 100% var(--notch-y, 182px), #0000 98%, #000 100%);
@@ -639,14 +662,14 @@
       mask: radial-gradient(circle 13px at 0 var(--notch-y, 182px), #0000 98%, #000 100%), radial-gradient(circle 13px at 100% var(--notch-y, 182px), #0000 98%, #000 100%);
       mask-composite: intersect;
     }
-    .getapp__copy { position: relative; left: auto; top: auto; transform: none; width: auto; align-items: center; }
+    .getapp__copy { padding: 0; margin-top: 0; align-items: center; }
     .getapp__top { gap: 12px; padding-top: 0; align-items: center; }
     .getapp__vdivider { display: block; width: calc(100% + 6px); margin: 0 -3px; height: 1.5px; } /* 17px from each card edge, as in Figma */
     .getapp__vdivider img { display: block; width: 100%; height: 1.5px; }
     .getapp__title { font-size: 20px; line-height: 28px; }
     .getapp__sub { margin-top: 2px; font-size: 14px; line-height: 22px; white-space: normal; }
     .getapp__btns { flex-direction: column; width: 100%; }
-    .social-btn { width: 100%; }
+    .social-btn, .getapp__btns .social-btn { flex: none; width: 100%; }
     .footer { margin-top: 120px; padding: 96px 0 72px; }
     .footer__inner { padding-right: 0; }
     .footer__cols { flex-direction: column; gap: 40px; align-items: center; }
@@ -687,11 +710,11 @@
     <div class="hero__titles">
       <p class="hero__eyebrow reveal" style="--delay: 0ms">Introducing Dine now</p>
       <div>
-        <h1 class="hero__title reveal" id="hero-title" style="--delay: 80ms">Get <em>30% off food</em>, when you want to eat now</h1>
-        <p class="hero__sub reveal" style="--delay: 160ms">See where you can dine right now near you. Available in the First Table app only</p>
+        <h1 class="hero__title reveal" id="hero-title" style="--delay: 100ms">Get <em>30% off food</em>, when you want to eat now</h1>
+        <p class="hero__sub reveal" style="--delay: 200ms">See where you can dine right now near you. Available in the First Table app only</p>
       </div>
     </div>
-    <div class="hero__btns reveal" style="--delay: 300ms; --reveal-y: 0px">
+    <div class="hero__btns reveal" style="--delay: 200ms; --reveal-dur: 1200ms; --reveal-y: 0px">
       <a class="social-btn social-btn--dark" href="#"><img src="assets/page/icon-google-play-dark.svg" alt="">Get on Google Play</a>
       <a class="social-btn social-btn--dark" href="#"><img src="assets/page/icon-apple-white.svg" alt="">Get in App Store</a>
     </div>
@@ -890,7 +913,6 @@
 </section>
 
 <section class="getapp wrap" aria-labelledby="getapp-title">
-  <img class="getapp__shape" src="assets/page/app-shape.svg" alt="">
   <div class="getapp__voucher" aria-hidden="true"></div>
   <div class="getapp__copy">
     <div class="getapp__top">
@@ -912,7 +934,7 @@
       <a class="social-btn" href="#"><img src="assets/page/icon-apple.svg" alt="">Get in App Store</a>
     </div>
   </div>
-  <div class="getapp__divider" aria-hidden="true"><img src="assets/page/app-divider.svg" alt=""></div>
+  <div class="getapp__divider" aria-hidden="true"></div>
   <div class="qr">
     <div class="qr__code" role="img" aria-label="QR code to get the First Table app">
       <div style="inset:1.22% 1.56% 1.9% 1.56%"><img src="assets/page/qr-1.svg" alt=""></div>
