@@ -387,7 +387,7 @@
     background: radial-gradient(2063px 799px at 50% 0, #fff 35%, #d2f5eb 67.5%, #a4ebd7 100%);
   }
   /* hero load: long, soft, heavily overlapping reveals (shorter travel, gentler ease-out) */
-  .hero .reveal { --reveal-dur: 1100ms; --reveal-y: 14px; --reveal-ease: cubic-bezier(.16, 1, .3, 1); }
+  .hero .reveal { --reveal-dur: 1500ms; --reveal-y: 12px; --reveal-ease: cubic-bezier(.33, 1, .68, 1); }
   .hero__intro {
     /* on tall screens the spare height is shared above and below the intro */
     width: min(1010px, calc(100% - 32px)); margin: auto auto 0; padding-bottom: 40px; /* = TIMING.page.heroMinGap */
@@ -672,18 +672,18 @@
     <div class="hero__titles">
       <p class="hero__eyebrow reveal" style="--delay: 0ms">Introducing Dine now</p>
       <div>
-        <h1 class="hero__title reveal" id="hero-title" style="--delay: 60ms">Get <em>30% off food</em>, when you want to eat now</h1>
-        <p class="hero__sub reveal" style="--delay: 120ms">Find same-day offers at restaurants near you in the First Table app</p>
+        <h1 class="hero__title reveal" id="hero-title" style="--delay: 80ms">Get <em>30% off food</em>, when you want to eat now</h1>
+        <p class="hero__sub reveal" style="--delay: 160ms">Find same-day offers at restaurants near you in the First Table app</p>
       </div>
     </div>
-    <div class="hero__btns reveal" style="--delay: 220ms; --reveal-y: 0px">
+    <div class="hero__btns reveal" style="--delay: 300ms; --reveal-y: 0px">
       <a class="social-btn social-btn--dark" href="#"><img src="assets/page/icon-google-play-dark.svg" alt="">Get on Google Play</a>
       <a class="social-btn social-btn--dark" href="#"><img src="assets/page/icon-apple-white.svg" alt="">Get in App Store</a>
     </div>
   </div>
 
   <div class="hero__stage">
-    <div class="rcards reveal" style="--delay: 360ms; --reveal-y: 20px" aria-label="Offers near you">
+    <div class="rcards reveal" style="--delay: 480ms; --reveal-y: 16px" aria-label="Offers near you">
       <div class="rcards__track" id="rcards-track">
         <!-- one set; script clones it so the loop is seamless -->
         <article class="rcard" data-set>
@@ -732,7 +732,7 @@
         </article>
       </div>
     </div>
-    <div class="hero__phone reveal" style="--delay: 260ms; --reveal-dur: 1300ms; --reveal-y: 32px"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
+    <div class="hero__phone reveal" style="--delay: 340ms; --reveal-dur: 1700ms; --reveal-y: 28px"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
   </div>
 
   <div class="ticker" aria-label="No booking needed, just walk in. No fee for a limited time.">
