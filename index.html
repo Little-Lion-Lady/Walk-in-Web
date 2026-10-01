@@ -417,6 +417,13 @@
     transform: scale(var(--hs, 1)); transform-origin: 0 0; overflow: hidden; padding: 4px 0 12px;
   }
   .rcards__track { display: flex; width: max-content; animation: rcards-scroll var(--rcards-dur, 60s) linear infinite; }
+  /* entrance: the wrapper sweeps in from one row-width to the left and eases to rest, while the
+     track keeps cruising, so the cards burst in fast and settle into the carousel speed */
+  .rcards__lead { will-change: transform; }
+  .rcards__lead.is-entering {
+    transform: translateX(0);
+    transition: transform var(--lead-dur, 1100ms) var(--lead-ease, cubic-bezier(.3, .55, .35, 1));   /* gentler launch, short tail into cruise */
+  }
   @keyframes rcards-scroll { from { transform: translateX(-50%); } to { transform: translateX(0); } }
   .rcard {
     flex: none; width: 272px; margin-right: 20px;
@@ -691,8 +698,8 @@
   </div>
 
   <div class="hero__stage">
-    <div class="rcards reveal" style="--delay: 480ms; --reveal-y: 0px" aria-label="Offers near you">
-      <div class="rcards__track" id="rcards-track">
+    <div class="rcards" aria-label="Offers near you">
+      <div class="rcards__lead" id="rcards-lead"><div class="rcards__track" id="rcards-track">
         <!-- one set; script clones it so the loop is seamless -->
         <article class="rcard" data-set>
           <div class="rcard__img"><img src="assets/page/card-1.jpg" alt="">
@@ -738,7 +745,7 @@
             <div class="rcard__actions"><button class="btn-time" type="button">12:30PM - 1:30PM</button></div>
           </div>
         </article>
-      </div>
+      </div></div>
     </div>
     <div class="hero__phone reveal" style="--delay: 0ms; --reveal-dur: 500ms; --reveal-y: 100%; --reveal-ease: cubic-bezier(.65, 0, .35, 1)"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
   </div>
@@ -978,7 +985,8 @@ const TIMING = {
     revealThreshold: 0.15, // how much of an element must be on screen before it fades up
     heroMinScale: 0.75,
     // hero phone rise: a physical spring (same parameters as Framer Motion's spring transition)
-    phoneSpring: { stiffness: 100, damping: 16.5, mass: 1 },   // damping 16.5 → ~1% overshoot    // hero phone + cards never scale below this; on short screens the hero grows instead
+    phoneSpring: { stiffness: 100, damping: 20, mass: 1 },   // damping 20 = critically damped: no overshoot
+    cardsEntrance: { delay: 150, duration: 1100 },   // hero cards sweep in from the left, then settle into cardsSpeed   // damping 16.5 → ~1% overshoot    // hero phone + cards never scale below this; on short screens the hero grows instead
   },
   jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
@@ -1595,7 +1603,18 @@ window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, r
   // like the phone below the ticker, would never be seen by the observer)
   const heroReveals = document.querySelectorAll('.hero .reveal');
   // a timer, not requestAnimationFrame: background tabs pause rAF, which left the phone hidden
-  setTimeout(() => heroReveals.forEach(el => el.classList.add('is-in')), 30);
+  const lead = document.getElementById('rcards-lead');
+  if (motionOK()) {
+    // park the cards a full row-width (plus a margin) off to the left, then let them sweep in
+    const trackW = document.getElementById('rcards-track').scrollWidth;
+    lead.style.transform = `translateX(${-(trackW / 2 + 60)}px)`;
+    lead.style.setProperty('--lead-dur', `${P.cardsEntrance.duration}ms`);
+  }
+  setTimeout(() => {
+    heroReveals.forEach(el => el.classList.add('is-in'));
+    if (!motionOK()) return;
+    setTimeout(() => { lead.style.transform = ''; lead.classList.add('is-entering'); }, P.cardsEntrance.delay);
+  }, 30);
   const reveals = document.querySelectorAll('.reveal:not(.hero .reveal)');
   if ('IntersectionObserver' in window && document.documentElement.classList.contains('js-motion')) {
     const io = new IntersectionObserver(entries => entries.forEach(e => {
