@@ -985,7 +985,7 @@ const TIMING = {
     revealThreshold: 0.15, // how much of an element must be on screen before it fades up
     heroMinScale: 0.75,
     // hero phone rise: a physical spring (same parameters as Framer Motion's spring transition)
-    phoneSpring: { stiffness: 100, damping: 20, mass: 1 },   // damping 20 = critically damped: no overshoot
+    phoneSpring: { stiffness: 560, damping: 47.3, mass: 1 },   // critically damped (no overshoot), settles in ~400ms
     cardsEntrance: { delay: 0, duration: 1500 },   // hero cards sweep in from the left, then settle into cardsSpeed   // damping 16.5 → ~1% overshoot    // hero phone + cards never scale below this; on short screens the hero grows instead
   },
   jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
