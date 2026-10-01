@@ -381,8 +381,8 @@
     padding-top: 32px;
     overflow: hidden;
     display: flex; flex-direction: column;
-    height: max(600px, calc(100vh - 126px));
-    height: max(600px, calc(100svh - 126px));
+    min-height: max(600px, calc(100vh - 126px));
+    min-height: max(600px, calc(100svh - 126px));
     /* Figma: radial gradient from the top centre, white → mint */
     background: radial-gradient(2063px 799px at 50% 0, #fff 35%, #d2f5eb 67.5%, #a4ebd7 100%);
   }
@@ -588,11 +588,14 @@
     .site-regions { display: none; }
     .site-header__right { margin-left: 0; }
     .site-avatar { width: 52px; }
-    .hero { margin-top: 0; height: max(600px, calc(100svh - 72px)); }
+    .hero { margin-top: 0; min-height: max(600px, calc(100svh - 72px)); }
+    /* mobile ticker (Figma 8903:429639): 34px tall, 14px text */
+    .ticker { height: 34px; }
+    .ticker__track { padding: 7px 0; font-size: 14px; line-height: 20px; }
     .hero__title { font-size: 28px; line-height: 34px; letter-spacing: -0.28px; }
     .hero__eyebrow { font-size: 18px; line-height: 24px; }
     .hero__sub { font-size: 17px; line-height: 26px; }
-    .hero__btns { flex-direction: column; width: 100%; max-width: 220px; }
+    .hero__btns { flex-direction: column; width: 100%; max-width: 220px; gap: 8px; }
     /* tighter vertical rhythm on phones */
     .hero__intro { gap: 24px; }
     .hero__titles { gap: 12px; }
@@ -606,7 +609,7 @@
     .faq__list { max-width: none; width: 100%; }
     /* get app: voucher with side cut-outs at the dashed divider (Figma 8903:429733); no QR on a phone */
     .getapp {
-      width: calc(100% - 32px); height: auto; margin-top: 96px; padding: 32px 36px 16px; text-align: center;
+      width: calc(100% - 32px); height: auto; margin-top: 96px; padding: 32px 20px 28px; text-align: center;
       filter: drop-shadow(0 1px 1px rgba(47, 55, 66, 0.03)) drop-shadow(0 2px 3px rgba(47, 55, 66, 0.02)) drop-shadow(0 6px 8px rgba(47, 55, 66, 0.06));
     }
     .getapp__shape, .getapp__divider, .qr { display: none; }
@@ -621,7 +624,7 @@
     }
     .getapp__copy { position: relative; left: auto; top: auto; transform: none; width: auto; align-items: center; }
     .getapp__top { gap: 12px; padding-top: 0; align-items: center; }
-    .getapp__vdivider { display: block; width: calc(100% + 32px); margin: 0 -16px; height: 1.5px; }
+    .getapp__vdivider { display: block; width: calc(100% + 6px); margin: 0 -3px; height: 1.5px; } /* 17px from each card edge, as in Figma */
     .getapp__vdivider img { display: block; width: 100%; height: 1.5px; }
     .getapp__title { font-size: 20px; line-height: 28px; }
     .getapp__sub { margin-top: 2px; font-size: 14px; line-height: 22px; white-space: normal; }
@@ -963,6 +966,7 @@ const TIMING = {
     tickerSpeed: 60,       // "No need to book" ticker, px per second (right → left)
     stripsDrift: 360,      // image strips: how far each row travels (px) across the scroll past them
     revealThreshold: 0.15, // how much of an element must be on screen before it fades up
+    heroMinScale: 0.75,    // hero phone + cards never scale below this; on short screens the hero grows instead
   },
   jumpTimeout: 1500,      // fallback end of a tapped step's smooth scroll (browsers without scrollend)
   // step 1 pills pop in (same pop as step 3's tags) as the scroll passes each point
@@ -1504,8 +1508,10 @@ window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, r
   const hero = document.querySelector('.hero');
   function fitHero() {
     const intro = hero.querySelector('.hero__intro'), ticker = hero.querySelector('.ticker');
-    const room = hero.clientHeight - 32 - intro.offsetHeight - ticker.offsetHeight;   // intro's bottom padding is the minimum gap
-    hero.style.setProperty('--hs', Math.max(0.5, Math.min(1, room / 461)).toFixed(3));
+    const target = Math.max(600, innerHeight - hero.offsetTop - 10);   // the min-height the hero aims for
+    const room = target - 32 - intro.offsetHeight - ticker.offsetHeight;   // intro's bottom padding is the minimum gap
+    // never shrink the phone below P.heroMinScale; the hero grows taller instead
+    hero.style.setProperty('--hs', Math.max(P.heroMinScale, Math.min(1, room / 461)).toFixed(3));
   }
   // re-fit whenever the hero or its intro changes size (resize, web fonts arriving)
   if ('ResizeObserver' in window) new ResizeObserver(fitHero).observe(hero.querySelector('.hero__intro'));
