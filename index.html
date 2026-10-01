@@ -1564,7 +1564,11 @@ window.HIW = { TIMING, S, TRANSITIONS, get state() { return { settled, target, r
   }));
 
   /* ---------- reveal on scroll (fade + rise, once) ---------- */
-  const reveals = document.querySelectorAll('.reveal');
+  // the hero is always the first screen: play its intro on load (an element parked off-screen,
+  // like the phone below the ticker, would never be seen by the observer)
+  const heroReveals = document.querySelectorAll('.hero .reveal');
+  requestAnimationFrame(() => requestAnimationFrame(() => heroReveals.forEach(el => el.classList.add('is-in'))));
+  const reveals = document.querySelectorAll('.reveal:not(.hero .reveal)');
   if ('IntersectionObserver' in window && document.documentElement.classList.contains('js-motion')) {
     const io = new IntersectionObserver(entries => entries.forEach(e => {
       if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
