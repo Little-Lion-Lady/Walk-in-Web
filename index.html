@@ -387,6 +387,8 @@
     background: radial-gradient(2063px 799px at 50% 0, #fff 35%, #d2f5eb 67.5%, #a4ebd7 100%);
   }
   /* hero load: long, soft, heavily overlapping reveals (shorter travel, gentler ease-out) */
+  /* the phone never fades (cards behind it would show through); it rises from behind the ticker */
+  .js-motion .hero__phone.reveal { opacity: 1; }
   .hero .reveal { --reveal-dur: 1500ms; --reveal-y: 12px; --reveal-ease: cubic-bezier(.33, 1, .68, 1); }
   .hero__intro {
     /* on tall screens the spare height is shared above and below the intro */
@@ -732,7 +734,7 @@
         </article>
       </div>
     </div>
-    <div class="hero__phone reveal" style="--delay: 340ms; --reveal-dur: 1700ms; --reveal-y: 28px"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
+    <div class="hero__phone reveal" style="--delay: 200ms; --reveal-dur: 1700ms; --reveal-y: 100%"><img src="assets/phone-mockup.png" alt="The First Table app showing a claimed 30% off offer"></div>
   </div>
 
   <div class="ticker" aria-label="No booking needed, just walk in. No fee for a limited time.">
