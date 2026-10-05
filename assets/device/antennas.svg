@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="329.418" height="689.709" viewBox="0 0 329.418 689.709" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Antennas">
+<path id="Bottom" d="M65.7127 684.931H70.1308V689.709H65.7127V684.931Z" fill="#9AA9B1" fill-opacity="0.5"/>
+<path id="Left-Bottom" d="M0.0224665 620.85H4.7487V624.737H0.0224665V620.85Z" fill="#9AA9B1" fill-opacity="0.5"/>
+<path id="Left-Top" d="M0 69.9771H4.97046V75.5977H0V69.9771Z" fill="#E4E4E3" fill-opacity="0.65"/>
+<path id="Right-Bottom" d="M324.447 620.799H329.418V624.734H324.447V620.799Z" fill="#9AA9B1" fill-opacity="0.5"/>
+<path id="Right" d="M324.447 70.2577H329.418V75.5973H324.447V70.2577Z" fill="#E4E4E3" fill-opacity="0.65"/>
+<path id="Top" d="M259.131 0H264.135V4.44258H259.131V0Z" fill="#E4E4E3" fill-opacity="0.65"/>
+</g>
+</svg>
